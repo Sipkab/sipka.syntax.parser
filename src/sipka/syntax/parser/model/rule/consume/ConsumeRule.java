@@ -1,0 +1,139 @@
+package sipka.syntax.parser.model.rule.consume;
+
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import sipka.syntax.parser.model.parse.ParseTimeData;
+import sipka.syntax.parser.model.parse.context.ParseContext;
+import sipka.syntax.parser.model.parse.document.DocumentData;
+import sipka.syntax.parser.model.parse.document.DocumentRegion;
+import sipka.syntax.parser.model.parse.params.InvokeParam;
+import sipka.syntax.parser.model.parse.params.RegexParam;
+import sipka.syntax.parser.model.parse.params.VarReferenceParam;
+import sipka.syntax.parser.model.rule.ParseHelper;
+import sipka.syntax.parser.model.rule.ParsingResult;
+import sipka.syntax.parser.model.rule.Rule;
+import sipka.syntax.parser.model.statement.ConsumedStatement;
+import sipka.syntax.parser.model.statement.Statement;
+import sipka.syntax.parser.model.statement.repair.ParsingInformation;
+
+public abstract class ConsumeRule extends Rule {
+	private final InvokeParam<Pattern> param;
+
+	public ConsumeRule(Pattern pattern) {
+		this(new RegexParam(pattern));
+	}
+
+	public ConsumeRule(InvokeParam<Pattern> param) {
+		super(null);
+		this.param = param;
+	}
+
+	public ConsumeRule(String identifierName, Pattern pattern) {
+		this(identifierName, new RegexParam(pattern));
+	}
+
+	public ConsumeRule(String identifierName, InvokeParam<Pattern> param) {
+		super(identifierName);
+		this.param = param;
+	}
+
+	public InvokeParam<Pattern> getParam() {
+		return param;
+	}
+
+	/**
+	 * Notifies the implementation about the successfull match of characters.
+	 * <p>
+	 * Subclasses can implement their own actions to handle the parsing of characters from the input.
+	 * 
+	 * @param matcher
+	 *            The matcher that was used to parse the characters.
+	 * @param parsed
+	 *            The parsed characters.
+	 * @param context
+	 *            The context of parsing.
+	 */
+	protected void charactersConsumed(Matcher matcher, CharSequence parsed, ParseContext context) {
+	}
+
+	private ParsingResult createStatement(CharSequence parsed, DocumentRegion position,
+			DocumentRegion regionofinterest) {
+		return new ParsingResult(new ConsumedStatement(parsed, position),
+				new ParsingInformation(this, regionofinterest));
+	}
+
+	private CharSequence tryParse(DocumentData s, Pattern pattern, ParseContext context,
+			DocumentRegion outregionofinterest) {
+		AccessTrackingCharSequence trackingcs = new AccessTrackingCharSequence(s);
+		Matcher matcher = pattern.matcher(trackingcs);
+
+		final int start;
+		final int end;
+
+		final boolean found = matcher.find();
+		//if the pattern requires a minimum length, then the tracking charsequence will not work
+		outregionofinterest.setOffset(s.getDocumentOffset());
+		if (matcher.hitEnd()) {
+			//if the matching hits the end of the input, use the length as end of region of interest
+			//add one to get modified when a character is added to the string
+			outregionofinterest.setLength(s.length() + 1);
+		} else {
+			//set the end of the region of interest to the last accessed character
+			outregionofinterest.setLength(trackingcs.getMaxAccessIndex() + 1);
+		}
+		if (!found || (start = matcher.start()) != 0
+//				the following is commented out, because we allow consume rules to match empty.
+//				|| (end = matcher.end()) == 0
+		) {
+			return null;
+		}
+		end = matcher.end();
+		if (outregionofinterest.getLength() < end - start) {
+			//if by any chance the region is smaller than the matched length, set it
+			//this shouldnt normally occurr
+			outregionofinterest.setLength(end - start);
+			//XXX throw an exception for debugging
+			throw new AssertionError();
+		}
+		CharSequence parsed = s.subSequence(start, end);
+		charactersConsumed(matcher, parsed, context);
+		return parsed;
+	}
+
+	@Override
+	protected final ParsingResult parseStatementImpl(ParseHelper helper, DocumentData s, ParseContext context,
+			ParseTimeData parsedata) {
+		int startoffset = s.getDocumentOffset();
+
+		Pattern pattern = param.getValue(context);
+		DocumentRegion regionofinterest = new DocumentRegion();
+		CharSequence parsed = tryParse(s, pattern, context, regionofinterest);
+		if (parsed == null) {
+			String identifier = getIdentifierName();
+			if (identifier == null && (param instanceof VarReferenceParam<?>)) {
+				VarReferenceParam<?> vp = (VarReferenceParam<?>) param;
+				identifier = vp.getVarname();
+			}
+			return new ParsingResult(null, new ParsingInformation(this, regionofinterest));
+		}
+		DocumentRegion position = new DocumentRegion(startoffset, parsed.length());
+		s.removeFromStart(parsed.length());
+
+		return createStatement(parsed, position, regionofinterest);
+	}
+
+	@Override
+	protected ParsingResult repairStatementImpl(Statement statement, ParsingInformation parsinginfo, DocumentData s,
+			ParseContext context, Predicate<? super Statement> modifiedstatementpredicate, ParseTimeData parsedata) {
+		return parseStatementImpl(null, s, context, parsedata);
+	}
+
+	@Override
+	public String toString() {
+		return this.getClass().getSimpleName() + " [" + (param != null ? "param=" + param + ", " : "")
+				+ (getIdentifierName() != null ? "getIdentifierName()=" + getIdentifierName() : "") + "]";
+	}
+
+}
