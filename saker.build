@@ -24,7 +24,11 @@ export(
 			{
 				Resources: **/*.class, 
 				Directory: $compile[javac][ClassDirectory],
-			}
+			},
+			{
+				Files: LICENSE,
+				TargetDirectory: META-INF,
+			},
 		],
 		Manifest: {
 			MainAttributes: {
@@ -40,6 +44,10 @@ export(
 			{
 				Directory: src,
 				Resources: **/*.java,
+			},
+			{
+				Files: LICENSE,
+				TargetDirectory: META-INF,
 			},
 		],
 		Manifest: {
