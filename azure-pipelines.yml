@@ -9,5 +9,5 @@ steps:
   displayName: 'Download saker.build'
 - script: |
     java -jar saker.build.jar -bd build -trace pwd://build/build.trace export
-    echo ##vso[artifact.upload containerfolder=build_trace;artifactname=build.trace;]$(pwd)/build/build.trace
+    echo ##vso[task.uploadfile]$(pwd)/build/build.trace
   displayName: 'Export library JAR'
