@@ -11,3 +11,23 @@ steps:
     java -jar saker.build.jar -bd build -trace pwd://build/build.trace export
     echo ##vso[task.uploadfile]$(pwd)/build/build.trace
   displayName: 'Export library JAR'
+
+  
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+- job: Job
+  steps:
+  - script: curl https://api.nest.saker.build/bundle/download/saker.build-v$(curl -s https://mirror.nest.saker.build/badges/saker.build/latest.txt) -o saker.build.jar
+    displayName: 'Download saker.build'
+  - script: |
+      java -jar saker.build.jar -bd build -trace pwd://build/build.trace export
+      cp build/build.trace $(Build.ArtifactStagingDirectory)/build.trace
+    displayName: 'Export library JAR'
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: build.trace
