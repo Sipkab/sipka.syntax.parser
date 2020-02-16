@@ -7,5 +7,7 @@ pool:
 steps:
 - script: curl https://api.nest.saker.build/bundle/download/saker.build-v$(curl -s https://mirror.nest.saker.build/badges/saker.build/latest.txt) -o saker.build.jar
   displayName: 'Download saker.build'
-- script: java -jar saker.build.jar -bd build export
+- script: |
+    java -jar saker.build.jar -bd build -trace pwd://build/build.trace export
+    echo ##vso[artifact.upload containerfolder=build_trace;artifactname=build.trace;]$(pwd)/build/build.trace
   displayName: 'Export library JAR'
