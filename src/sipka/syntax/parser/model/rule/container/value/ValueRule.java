@@ -35,9 +35,6 @@ import sipka.syntax.parser.model.statement.repair.ParsingInformation;
 import sipka.syntax.parser.util.Pair;
 
 public class ValueRule extends InOrderRule {
-	@Deprecated
-	public static final String TARGET_VALUE_VAR_NAME = BUILTIN_VAR_PREFIX + "target_value";
-
 	protected static class ValueParsingInformation extends ParsingInformation {
 		private ParsingInformation subInformation;
 
@@ -60,35 +57,6 @@ public class ValueRule extends InOrderRule {
 		@Override
 		public List<ParsingInformation> getChildren() {
 			return Collections.singletonList(subInformation);
-		}
-	}
-
-	public static class ValueConsumer {
-		private StringBuilder valueBuilder = new StringBuilder();
-
-		public void appendValue(CharSequence parsed) {
-			valueBuilder.append(parsed);
-		}
-
-		public void appendValue(String parsed) {
-			valueBuilder.append(parsed);
-		}
-
-		protected CharSequence getParsedValue() {
-			return valueBuilder;
-		}
-
-		public int length() {
-			return valueBuilder.length();
-		}
-
-		public void setLength(int len) {
-			valueBuilder.setLength(len);
-		}
-
-		@Override
-		public String toString() {
-			return "ValueConsumer [builder=" + valueBuilder + "]";
 		}
 	}
 
@@ -143,6 +111,15 @@ public class ValueRule extends InOrderRule {
 
 		return executeParsing(context, valuecontext -> super.repairChildren(helper, vstm.getSubStatement(),
 				valueinfo.getSubInformation(), s, valuecontext, modifiedstatementpredicate, parsedata));
+	}
+
+	@Override
+	protected void repairStatementSkippedImpl(Statement statement, ParseContext context,
+			ParsingInformation parsinginfo) {
+		//empty on purpose
+		//no need to call the children, as their matched values would apply to THIS statement
+		//however, as this statement is skipped during reparation, the value will be the same as
+		//it is currently, therefore it is unnecessary to call the children reparation skip functions
 	}
 
 	@Override

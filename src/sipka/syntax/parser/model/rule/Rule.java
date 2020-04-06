@@ -71,8 +71,10 @@ public abstract class Rule {
 	 * 
 	 * @param statement
 	 * @param context
+	 * @param parsinginfo
 	 */
-	protected void repairStatementSkippedImpl(Statement statement, ParseContext context) {
+	protected void repairStatementSkippedImpl(Statement statement, ParseContext context,
+			ParsingInformation parsinginfo) {
 	}
 
 	public final ParsingResult parseStatement(ParseHelper helper, DocumentData s, ParseContext context,
@@ -80,37 +82,30 @@ public abstract class Rule {
 		if (helper.getProgressMonitor().isCancelled()) {
 			throw new ParsingCancelledException();
 		}
-		helper.pushRule(this);
-		try {
-			// System.out.println("parse with " + s + " " + getRuleId() + " " + this + " " );
-			DocumentData cs = new DocumentData(s);
 
-			final int slen = cs.length();
-			// System.out.println("try parse with: " + getRuleId() + " " + this);
-			ParsingResult result = parseStatementImpl(helper, cs, context, parsedata);
+		DocumentData cs = new DocumentData(s);
 
-			if (result.isSucceeded()) {
-				int count = slen - cs.length();
-				s.removeFromStart(count);
-			}
-			// System.out.println("parsed with count: " + count + " : " + getRuleId() + " " + this + " to :\n" + s);
-			return result;
-		} finally {
-			helper.popRule();
+		final int slen = cs.length();
+		ParsingResult result = parseStatementImpl(helper, cs, context, parsedata);
+
+		if (result.isSucceeded()) {
+			int count = slen - cs.length();
+			s.removeFromStart(count);
 		}
+		return result;
 	}
 
 	public final ParsingResult repairStatement(ParseHelper helper, Statement statement, ParsingInformation parsinginfo,
 			DocumentData s, ParseContext context, Predicate<? super Statement> modifiedstatementpredicate,
 			ParseTimeData parsedata) {
-//		System.out.println("Rule.repairStatement() repairing " + statement.getPosition() + " - " + statement.getValue());
 		ParsingResult result = repairStatementImpl(helper, statement, parsinginfo, s, context,
 				modifiedstatementpredicate, parsedata);
 		return result;
 	}
 
-	public final void repairStatementSkipped(Statement statement, ParseContext context) {
-		repairStatementSkippedImpl(statement, context);
+	public final void repairStatementSkipped(Statement statement, ParseContext context,
+			ParsingInformation parsinginfo) {
+		repairStatementSkippedImpl(statement, context, parsinginfo);
 	}
 
 	public final String getIdentifierName() {

@@ -17,24 +17,24 @@ package sipka.syntax.parser.model.rule.container;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import java.util.function.Predicate;
 
-import sipka.syntax.parser.model.FatalParseException;
 import sipka.syntax.parser.model.parse.ParseTimeData;
 import sipka.syntax.parser.model.parse.context.ParseContext;
 import sipka.syntax.parser.model.parse.document.DocumentData;
 import sipka.syntax.parser.model.rule.ParseHelper;
 import sipka.syntax.parser.model.rule.ParsingResult;
 import sipka.syntax.parser.model.rule.Rule;
-import sipka.syntax.parser.model.rule.container.value.ValueRule.ValueConsumer;
+import sipka.syntax.parser.model.rule.container.value.ValueConsumer;
 import sipka.syntax.parser.model.statement.Statement;
+import sipka.syntax.parser.model.statement.repair.CollectionParsingInformation;
 import sipka.syntax.parser.model.statement.repair.ParsingInformation;
 import sipka.syntax.parser.util.Pair;
 
 public abstract class ContainerRule extends Rule {
 	private final Collection<Pair<Rule, ParseTimeData>> children = new ArrayList<>();
-	@Deprecated
-	private boolean defined;
 
 	public ContainerRule() {
 		super(null);
@@ -42,16 +42,6 @@ public abstract class ContainerRule extends Rule {
 
 	public ContainerRule(String identifierName) {
 		super(identifierName);
-	}
-
-	@Deprecated
-	public void setDefined() {
-		this.defined = true;
-	}
-
-	@Deprecated
-	public boolean isDefined() {
-		return defined;
 	}
 
 	protected abstract ParsingResult parseChildren(ParseHelper helper, DocumentData s, ParseContext context,
@@ -64,10 +54,6 @@ public abstract class ContainerRule extends Rule {
 	@Override
 	protected final ParsingResult parseStatementImpl(ParseHelper helper, DocumentData s, ParseContext context,
 			ParseTimeData parsedata) {
-		if (!isDefined()) {
-			throw new FatalParseException("Container rule with ID: " + getIdentifierName() + " was not defined at: "
-					+ getRuleDocumentPosition());
-		}
 		ValueConsumer valconsumer = context.getCurrentValueConsumer();
 		int vclen = 0;
 		if (valconsumer != null) {
@@ -101,23 +87,33 @@ public abstract class ContainerRule extends Rule {
 		return result;
 	}
 
-	@SafeVarargs
-	public final ContainerRule addChild(Pair<Rule, ParseTimeData>... r) {
-		if (r.length > 0) {
-			setDefined();
+	@Override
+	protected void repairStatementSkippedImpl(Statement statement, ParseContext context,
+			ParsingInformation parsinginfo) {
+		CollectionParsingInformation collectionparsinginfo = (CollectionParsingInformation) parsinginfo;
+
+		List<Statement> directchildren = statement.getDirectChildren();
+		Iterator<Statement> childit = directchildren.iterator();
+		if (childit.hasNext()) {
+			Iterator<ParsingInformation> infoit = collectionparsinginfo.getChildren().iterator();
+			do {
+				Statement childstm = childit.next();
+				ParsingInformation childinfo = infoit.next();
+				childinfo.getRule().repairStatementSkipped(childstm, context, childinfo);
+			} while (childit.hasNext());
 		}
-		for (Pair<Rule, ParseTimeData> pair : r) {
-			getChildren().add(new Pair<>(pair.key, pair.value));
-		}
+	}
+
+	public final ContainerRule addChild(Pair<Rule, ParseTimeData> r) {
+		getChildren().add(r);
 		return this;
 	}
 
 	public final ContainerRule addChild(Rule r, ParseTimeData pdata) {
-		setDefined();
 		return addChild(new Pair<>(r, pdata));
 	}
 
-	protected Collection<Pair<Rule, ParseTimeData>> getChildren() {
+	protected final Collection<Pair<Rule, ParseTimeData>> getChildren() {
 		return children;
 	}
 }

@@ -1,0 +1,8 @@
+language test {
+	value v 1 {
+		matches "[0-9]+" 1;
+		inorder 1 {
+			matches "[a-z]+" 1;
+		}
+	}
+}

@@ -23,9 +23,11 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.Stack;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
@@ -462,8 +464,16 @@ public class Language extends InOrderRule {
 		return null;
 	}
 
-	private static void parseRules(Map<String, Language> langmap, ContainerRule container, Statement stm,
-			Stack<Pair<String, Object>> parseStack) throws ParseFailedException {
+	private static void parseRules(Statement resultstm, Map<String, Language> langmap) throws ParseFailedException {
+		Set<Rule> undefinedrules = new HashSet<>();
+		parseRulesImpl(langmap, null, resultstm, ruleStackWithDefaultRules(), undefinedrules);
+		if (!undefinedrules.isEmpty()) {
+			throw new ParseFailedException("Some rules were not defined.");
+		}
+	}
+
+	private static void parseRulesImpl(Map<String, Language> langmap, ContainerRule container, Statement stm,
+			Stack<Pair<String, Object>> parseStack, Set<Rule> undefinedrules) throws ParseFailedException {
 		int parseStackAdded = 0;
 		try {
 			for (Pair<String, Statement> scopepair : stm.getScopes()) {
@@ -473,14 +483,12 @@ public class Language extends InOrderRule {
 						final String name = scoped.firstScope("name").getValue();
 						Language lang = new Language(name);
 
-						parseRules(langmap, lang, scoped.firstScope("body"), parseStack);
+						parseRulesImpl(langmap, lang, scoped.firstScope("body"), parseStack, undefinedrules);
 						String langid = lang.getIdentifierName();
 						Language prev = langmap.put(langid, lang);
 						if (prev != null) {
 							throw new IllegalArgumentException("Duplicate language definitions: " + langid);
 						}
-
-						lang.setDefined();
 
 						{
 							Rule rr = lang;
@@ -526,11 +534,11 @@ public class Language extends InOrderRule {
 													+ " - " + name);
 								}
 
-								rule = (ContainerRule) found;
-								if (rule.isDefined()) {
+								if (!undefinedrules.remove(found)) {
 									throw new ParseFailedException("Container node was already defined previously: "
 											+ name + " redeclare at: " + scoped.toDocumentPositionString());
 								}
+								rule = (ContainerRule) found;
 							} else {
 								// was not in stack
 								rule = instantiateContainerRule(type, name);
@@ -561,12 +569,11 @@ public class Language extends InOrderRule {
 							throw new ParseFailedException("Container rule must have name or occurrence");
 						}
 
-						rule.setDefined();
 						{
 							Rule rr = rule;
 							rr.setRuleDocumentPosition(scoped.getPosition());
 						}
-						parseRules(langmap, rule, scoped.firstScope("body"), parseStack);
+						parseRulesImpl(langmap, rule, scoped.firstScope("body"), parseStack, undefinedrules);
 						break;
 					}
 					case "consume_node": {
@@ -607,6 +614,7 @@ public class Language extends InOrderRule {
 						} else {
 							// instantiate
 							ContainerRule rule = instantiateContainerRule(type, name);
+							undefinedrules.add(rule);
 							// add to stack
 							parseStack.push(new Pair<>(rule.getIdentifierName(), rule));
 							++parseStackAdded;
@@ -687,7 +695,7 @@ public class Language extends InOrderRule {
 		Map<String, Manipulator> manimap = new TreeMap<>();
 		Map<String, Language> langmap = new TreeMap<>();
 
-		parseRules(langmap, null, resultstm, ruleStackWithDefaultRules());
+		parseRules(resultstm, langmap);
 		parseManipulators(manimap, null, resultstm);
 
 		for (Entry<String, Manipulator> entry : manimap.entrySet()) {

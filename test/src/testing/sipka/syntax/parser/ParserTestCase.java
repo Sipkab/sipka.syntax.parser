@@ -35,7 +35,16 @@ public abstract class ParserTestCase extends SakerTestCase {
 	}
 
 	public Language getLanguage() throws IOException, ParseFailedException {
-		Language lang = Language.fromFile(getFilePath("test.lang").toFile()).get("test");
+		try {
+			return getTestLanguageFromPath(getFilePath("test.lang"));
+		} catch (IOException e) {
+			return getTestLanguageFromPath(Paths.get(getClass().getName().replace('.', '/') + ".lang"));
+		}
+	}
+
+	private static Language getTestLanguageFromPath(Path path)
+			throws IOException, ParseFailedException, AssertionError {
+		Language lang = Language.fromFile(path.toFile()).get("test");
 		assertNonNull(lang, "language");
 		return lang;
 	}
@@ -47,13 +56,37 @@ public abstract class ParserTestCase extends SakerTestCase {
 	}
 
 	public ParsingResult parseData(String data) throws ParseFailedException, IOException {
-		return getLanguage().parseData(data);
+		ParsingResult result = getLanguage().parseData(data);
+		validateResultConsistency(result);
+		return result;
+	}
+
+	private static void validateResultConsistency(ParsingResult result) {
+		if (result == null) {
+			return;
+		}
+		Statement stm = result.getStatement();
+		validateStatementConsistency(0, stm);
+	}
+
+	private static void validateStatementConsistency(int startoffset, Statement stm) {
+		for (Statement childstm : stm.getDirectChildren()) {
+			if (startoffset != childstm.getOffset()) {
+				throw new AssertionError("Starting offset mismatch: " + startoffset + " - " + childstm.getOffset());
+			}
+			validateStatementConsistency(startoffset, childstm);
+			startoffset = childstm.getEndOffset();
+		}
 	}
 
 	public static ParsingResult repair(ParsingResult parseresult, List<ReparationRegion> modifications)
 			throws ParseFailedException {
-		ParsingResult repairresult = parseresult.getStatement().repair(parseresult.getParsingInformation(),
-				modifications);
-		return repairresult;
+		ParsingResult result = parseresult.getStatement().repair(parseresult.getParsingInformation(), modifications);
+		validateResultConsistency(result);
+		return result;
+	}
+
+	public static ReparationRegion rr(int offset, int length, CharSequence text) {
+		return new ReparationRegion(offset, length, text);
 	}
 }

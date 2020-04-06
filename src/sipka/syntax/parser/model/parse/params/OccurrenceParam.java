@@ -15,6 +15,8 @@
  */
 package sipka.syntax.parser.model.parse.params;
 
+import java.util.Objects;
+
 import sipka.syntax.parser.model.ParseFailedException;
 import sipka.syntax.parser.model.occurrence.Occurrence;
 import sipka.syntax.parser.model.parse.context.ParseContext;
@@ -27,6 +29,7 @@ public class OccurrenceParam implements InvokeParam<Occurrence> {
 	}
 
 	public OccurrenceParam(Occurrence occurrence) {
+		Objects.requireNonNull(occurrence, "occurrence");
 		this.occurrence = occurrence;
 	}
 
@@ -38,6 +41,25 @@ public class OccurrenceParam implements InvokeParam<Occurrence> {
 	@Override
 	public String toString() {
 		return "OccurrenceParam [occurrence=" + occurrence + "]";
+	}
+
+	@Override
+	public int hashCode() {
+		return occurrence.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		OccurrenceParam other = (OccurrenceParam) obj;
+		if (!occurrence.equals(other.occurrence))
+			return false;
+		return true;
 	}
 
 }

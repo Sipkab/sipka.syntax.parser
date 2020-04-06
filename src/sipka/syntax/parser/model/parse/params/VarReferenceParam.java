@@ -15,12 +15,15 @@
  */
 package sipka.syntax.parser.model.parse.params;
 
+import java.util.Objects;
+
 import sipka.syntax.parser.model.parse.context.ParseContext;
 
 public class VarReferenceParam<T> implements InvokeParam<T> {
 	private final String variableName;
 
 	public VarReferenceParam(String varname) {
+		Objects.requireNonNull(varname, "variable name");
 		this.variableName = varname;
 	}
 
@@ -31,23 +34,16 @@ public class VarReferenceParam<T> implements InvokeParam<T> {
 	@SuppressWarnings("unchecked")
 	@Override
 	public T getValue(ParseContext context) {
-		try {
-			Object result = context.getObjectForName(variableName);
-			while (result instanceof InvokeParam<?>) {
-				result = ((InvokeParam<?>) result).getValue(context);
-			}
-			return (T) result;
-		} catch (ClassCastException e) {
-			throw new IllegalArgumentException("Failed to cast variable reference parameter ", e);
+		Object result = context.getObjectForName(variableName);
+		while (result instanceof InvokeParam<?>) {
+			result = ((InvokeParam<?>) result).getValue(context);
 		}
+		return (T) result;
 	}
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((variableName == null) ? 0 : variableName.hashCode());
-		return result;
+		return variableName.hashCode();
 	}
 
 	@Override
@@ -59,11 +55,9 @@ public class VarReferenceParam<T> implements InvokeParam<T> {
 		if (getClass() != obj.getClass())
 			return false;
 		VarReferenceParam<?> other = (VarReferenceParam<?>) obj;
-		if (variableName == null) {
-			if (other.variableName != null)
-				return false;
-		} else if (!variableName.equals(other.variableName))
+		if (!variableName.equals(other.variableName)) {
 			return false;
+		}
 		return true;
 	}
 

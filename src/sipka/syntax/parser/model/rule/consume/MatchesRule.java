@@ -20,8 +20,9 @@ import java.util.regex.Pattern;
 
 import sipka.syntax.parser.model.parse.context.ParseContext;
 import sipka.syntax.parser.model.parse.params.InvokeParam;
-import sipka.syntax.parser.model.rule.container.value.ValueRule.ValueConsumer;
+import sipka.syntax.parser.model.rule.container.value.ValueConsumer;
 import sipka.syntax.parser.model.statement.Statement;
+import sipka.syntax.parser.model.statement.repair.ParsingInformation;
 
 public class MatchesRule extends ConsumeRule {
 	//TODO complete implementation of replacement
@@ -53,13 +54,15 @@ public class MatchesRule extends ConsumeRule {
 				//TODO use StringBuilder in case of jdk 9+
 				StringBuffer sb = new StringBuffer();
 				matcher.appendReplacement(sb, replacement);
+				//TODO appendTail?
 				targetValue.appendValue(sb.toString());
 			}
 		}
 	}
 
 	@Override
-	protected void repairStatementSkippedImpl(Statement statement, ParseContext context) {
+	protected void repairStatementSkippedImpl(Statement statement, ParseContext context,
+			ParsingInformation parsinginfo) {
 		ValueConsumer targetValue = context.getCurrentValueConsumer();
 		if (targetValue != null) {
 			targetValue.appendValue(statement.getValue());

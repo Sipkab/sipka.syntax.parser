@@ -83,8 +83,7 @@ public class InvokeRule extends Rule {
 			throw new FatalParseException("Rule not found: " + ruleParam + ".");
 		}
 
-		CallingContext invokeContext = new CallingContext(parsedata.getDeclaringContext());
-		invokeContext.putAllBuiltInFrom(context);
+		CallingContext invokeContext = CallingContext.mergeWithBuiltIns(parsedata.getDeclaringContext(), context);
 		invokeContext.putObject(getRuleAliasVarName(invokedrule), alias);
 		List<Pair<String, Class<?>>> declaredparams = invokedrule.getDeclaredParams();
 

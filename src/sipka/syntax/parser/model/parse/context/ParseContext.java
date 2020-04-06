@@ -21,7 +21,7 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 
 import sipka.syntax.parser.model.rule.Rule;
-import sipka.syntax.parser.model.rule.container.value.ValueRule.ValueConsumer;
+import sipka.syntax.parser.model.rule.container.value.ValueConsumer;
 
 public abstract class ParseContext {
 	protected final NavigableMap<String, Object> localsMap;
@@ -49,10 +49,14 @@ public abstract class ParseContext {
 		return result;
 	}
 
-	public void putAllBuiltInTo(Map<String, Object> target) {
+	protected void putAllBuiltInTo(Map<String, Object> target) {
+		if (localsMap.isEmpty()) {
+			return;
+		}
 		for (Entry<String, Object> entry : localsMap.entrySet()) {
-			if (entry.getKey().startsWith(Rule.BUILTIN_VAR_PREFIX)) {
-				target.put(entry.getKey(), entry.getValue());
+			String key = entry.getKey();
+			if (key.startsWith(Rule.BUILTIN_VAR_PREFIX)) {
+				target.put(key, entry.getValue());
 			}
 		}
 	}

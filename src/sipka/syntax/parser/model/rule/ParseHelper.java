@@ -80,8 +80,6 @@ public class ParseHelper {
 		}
 	}
 
-	private ArrayDeque<Rule> ruleStack = new ArrayDeque<>();
-
 	private Set<ParseFail> fails = new HashSet<>();
 
 	private ParseProgressMonitor monitor = ParseProgressMonitor.NULLMONITOR;
@@ -96,15 +94,6 @@ public class ParseHelper {
 	public ParseProgressMonitor getProgressMonitor() {
 		return monitor;
 	}
-
-	/* package */ void pushRule(Rule r) {
-		ruleStack.push(r);
-	}
-
-	/* package */ void popRule() {
-		ruleStack.pop();
-	}
-
 
 //	public void addFail(String pattern, String identifier, DocumentPosition pos) {
 //		int cmp = this.pos.compareTo(pos);

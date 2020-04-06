@@ -16,8 +16,8 @@
 package sipka.syntax.parser.model.rule.container.order;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.function.Predicate;
 
 import sipka.syntax.parser.model.parse.OccurrenceCounter;
@@ -135,9 +135,9 @@ public class InOrderRule extends ContainerRule {
 		List<OccurrenceCounter> childrenoccurrences = containerinfo.getOccurrences();
 		List<OccurrenceCounter> occurrences = new ArrayList<>();
 
-		ListIterator<ParsingInformation> infoit = childreninfos.listIterator();
-		ListIterator<OccurrenceCounter> occurit = childrenoccurrences.listIterator();
-		ListIterator<Statement> childstmit = stmchildren.listIterator();
+		Iterator<ParsingInformation> infoit = childreninfos.listIterator();
+		Iterator<OccurrenceCounter> occurit = childrenoccurrences.listIterator();
+		Iterator<Statement> childstmit = stmchildren.listIterator();
 
 		Statement childstm = null;
 		ParsingInformation childinfo = null;
@@ -182,7 +182,7 @@ public class InOrderRule extends ContainerRule {
 				} else {
 					//no need to repair
 					occounter.addOccurrence();
-					childrule.repairStatementSkipped(childstm, rulecontext);
+					childrule.repairStatementSkipped(childstm, rulecontext, childinfo);
 					buf.removeFromStart(childstm.getLength());
 					result.add(new ParsingResult(childstm, childinfo));
 					regionofinterest.expandTo(childinfo.getRegionOfInterest());

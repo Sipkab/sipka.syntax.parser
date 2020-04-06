@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Predicate;
@@ -172,8 +171,8 @@ public class AnyOrderRule extends ContainerRule {
 		List<ParsingInformation> childreninfos = containerinfo.getChildren();
 		Map<Rule, OccurrenceCounter> prevoccurrences = containerinfo.getOccurrences();
 
-		ListIterator<ParsingInformation> infoit = childreninfos.listIterator();
-		ListIterator<Statement> childstmit = stmchildren.listIterator();
+		Iterator<ParsingInformation> infoit = childreninfos.listIterator();
+		Iterator<Statement> childstmit = stmchildren.listIterator();
 
 		Map<Rule, ParseContext> contextmap = getRuleContextMap(context);
 		Map<Rule, OccurrenceCounter> occurrences = createOccurrencesMap(contextmap);
@@ -209,7 +208,7 @@ public class AnyOrderRule extends ContainerRule {
 			} else {
 				//data not changed for statement
 				occounter.addOccurrence();
-				childrule.repairStatementSkipped(childstm, contextmap.get(childrule));
+				childrule.repairStatementSkipped(childstm, contextmap.get(childrule), childinfo);
 				buf.removeFromStart(childstm.getLength());
 				result.add(new ParsingResult(childstm, childinfo));
 				regionofinterest.expandTo(childinfo.getRegionOfInterest());
