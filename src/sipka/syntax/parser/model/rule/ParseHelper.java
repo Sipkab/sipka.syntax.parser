@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import sipka.syntax.parser.model.parse.document.DocumentPosition;
 import sipka.syntax.parser.model.rule.Language.ParseProgressMonitor;
 
 public class ParseHelper {
@@ -84,12 +83,10 @@ public class ParseHelper {
 	private ArrayDeque<Rule> ruleStack = new ArrayDeque<>();
 
 	private Set<ParseFail> fails = new HashSet<>();
-	private DocumentPosition pos;
 
 	private ParseProgressMonitor monitor = ParseProgressMonitor.NULLMONITOR;
 
-	public ParseHelper(DocumentPosition pos) {
-		this.pos = pos;
+	public ParseHelper() {
 	}
 
 	public void setProgressMonitor(ParseProgressMonitor monitor) {
@@ -108,21 +105,18 @@ public class ParseHelper {
 		ruleStack.pop();
 	}
 
-	public DocumentPosition getPosition() {
-		return pos;
-	}
 
-	public void addFail(String pattern, String identifier, DocumentPosition pos) {
-		int cmp = this.pos.compareTo(pos);
-		if (cmp < 0) {
-			fails.clear();
-			this.pos = pos;
-			cmp = 0;
-		}
-		if (cmp == 0) {
-			fails.add(new ParseFail(pattern, identifier, ruleStack));
-		}
-	}
+//	public void addFail(String pattern, String identifier, DocumentPosition pos) {
+//		int cmp = this.pos.compareTo(pos);
+//		if (cmp < 0) {
+//			fails.clear();
+//			this.pos = pos;
+//			cmp = 0;
+//		}
+//		if (cmp == 0) {
+//			fails.add(new ParseFail(pattern, identifier, ruleStack));
+//		}
+//	}
 
 	public Set<ParseFail> getFails() {
 		return fails;

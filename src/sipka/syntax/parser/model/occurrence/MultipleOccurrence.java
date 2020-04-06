@@ -73,4 +73,29 @@ class MultipleOccurrence extends Occurrence {
 		}
 		return min < 0 ? 0 : min;
 	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((occurs == null) ? 0 : occurs.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		MultipleOccurrence other = (MultipleOccurrence) obj;
+		if (occurs == null) {
+			if (other.occurs != null)
+				return false;
+		} else if (!occurs.equals(other.occurs))
+			return false;
+		return true;
+	}
 }

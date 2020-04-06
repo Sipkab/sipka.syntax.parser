@@ -17,15 +17,25 @@ package sipka.syntax.parser.model.parse.context;
 
 import java.util.Map;
 import java.util.Map.Entry;
-
-import sipka.syntax.parser.model.rule.Rule;
-
+import java.util.NavigableMap;
 import java.util.TreeMap;
 
+import sipka.syntax.parser.model.rule.Rule;
+import sipka.syntax.parser.model.rule.container.value.ValueRule.ValueConsumer;
+
 public abstract class ParseContext {
-	protected final Map<String, Object> localsMap = new TreeMap<>();
+	protected final NavigableMap<String, Object> localsMap;
 
 	public ParseContext() {
+		this.localsMap = new TreeMap<>();
+	}
+
+	public ParseContext(ParseContext context) {
+		this.localsMap = new TreeMap<>(context.localsMap);
+	}
+
+	public ValueConsumer getCurrentValueConsumer() {
+		return null;
 	}
 
 	public Object getObjectForName(String name) {
@@ -37,10 +47,6 @@ public abstract class ParseContext {
 		if (result == null)
 			return defaultValue;
 		return result;
-	}
-
-	public void putAllObjectTo(Map<String, Object> target) {
-		target.putAll(localsMap);
 	}
 
 	public void putAllBuiltInTo(Map<String, Object> target) {

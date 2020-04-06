@@ -35,6 +35,7 @@ import sipka.syntax.parser.model.statement.repair.ParsingInformation;
 import sipka.syntax.parser.util.Pair;
 
 public class ValueRule extends InOrderRule {
+	@Deprecated
 	public static final String TARGET_VALUE_VAR_NAME = BUILTIN_VAR_PREFIX + "target_value";
 
 	protected static class ValueParsingInformation extends ParsingInformation {
@@ -65,12 +66,24 @@ public class ValueRule extends InOrderRule {
 	public static class ValueConsumer {
 		private StringBuilder valueBuilder = new StringBuilder();
 
-		public void addValue(CharSequence parsed) {
+		public void appendValue(CharSequence parsed) {
 			valueBuilder.append(parsed);
 		}
 
-		private CharSequence getParsedValue() {
+		public void appendValue(String parsed) {
+			valueBuilder.append(parsed);
+		}
+
+		protected CharSequence getParsedValue() {
 			return valueBuilder;
+		}
+
+		public int length() {
+			return valueBuilder.length();
+		}
+
+		public void setLength(int len) {
+			valueBuilder.setLength(len);
 		}
 
 		@Override
@@ -98,10 +111,8 @@ public class ValueRule extends InOrderRule {
 	private ParsingResult executeParsing(ParseContext context, Function<ParseContext, ParsingResult> executor) {
 		final String alias = (String) context.getObjectForName(getRuleAliasVarName(this), getIdentifierName());
 
-		CallingContext valuecontext = new CallingContext(context);
 		ValueConsumer valueconsumer = new ValueConsumer();
-
-		valuecontext.putObject(ValueRule.TARGET_VALUE_VAR_NAME, valueconsumer);
+		CallingContext valuecontext = new CallingContext(context, valueconsumer);
 
 		ParsingResult parsedchildrenresult = executor.apply(valuecontext);
 
@@ -124,12 +135,13 @@ public class ValueRule extends InOrderRule {
 	}
 
 	@Override
-	protected ParsingResult repairStatementImpl(Statement statement, ParsingInformation parsinginfo, DocumentData s,
-			ParseContext context, Predicate<? super Statement> modifiedstatementpredicate, ParseTimeData parsedata) {
+	protected ParsingResult repairChildren(ParseHelper helper, Statement statement, ParsingInformation parsinginfo,
+			DocumentData s, ParseContext context, Predicate<? super Statement> modifiedstatementpredicate,
+			ParseTimeData parsedata) {
 		ValueParsingInformation valueinfo = (ValueParsingInformation) parsinginfo;
 		ValueStatement vstm = (ValueStatement) statement;
 
-		return executeParsing(context, valuecontext -> super.repairStatementImpl(vstm.getSubStatement(),
+		return executeParsing(context, valuecontext -> super.repairChildren(helper, vstm.getSubStatement(),
 				valueinfo.getSubInformation(), s, valuecontext, modifiedstatementpredicate, parsedata));
 	}
 

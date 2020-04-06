@@ -39,10 +39,6 @@ public class DocumentData extends OffsetCharSequence {
 		return new OffsetCharSequence(subject, region.getOffset(), region.getLength());
 	}
 
-	public final DocumentPosition getDocumentPosition() {
-		return new DocumentPosition(this.index, 0, 0);
-	}
-
 	public final int getDocumentOffset() {
 		return this.index;
 	}

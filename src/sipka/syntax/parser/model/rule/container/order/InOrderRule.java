@@ -117,8 +117,9 @@ public class InOrderRule extends ContainerRule {
 	}
 
 	@Override
-	protected ParsingResult repairStatementImpl(Statement statement, ParsingInformation parsinginfo, DocumentData s,
-			ParseContext context, Predicate<? super Statement> modifiedstatementpredicate, ParseTimeData parsedata) {
+	protected ParsingResult repairChildren(ParseHelper helper, Statement statement, ParsingInformation parsinginfo,
+			DocumentData s, ParseContext context, Predicate<? super Statement> modifiedstatementpredicate,
+			ParseTimeData parsedata) {
 		DocumentData buf = new DocumentData(s);
 		final int startslen = buf.length();
 
@@ -158,7 +159,7 @@ public class InOrderRule extends ContainerRule {
 				if (buf.getDocumentOffset() != childstm.getOffset() || modifiedstatementpredicate.test(childstm)) {
 					//repair
 					final int buflen = buf.length();
-					ParsingResult repaired = childrule.repairStatement(childstm, childinfo, buf, rulecontext,
+					ParsingResult repaired = childrule.repairStatement(helper, childstm, childinfo, buf, rulecontext,
 							modifiedstatementpredicate, parsedata);
 					if (repaired.isSucceeded()) {
 						if (buflen == buf.length()) {
@@ -198,7 +199,6 @@ public class InOrderRule extends ContainerRule {
 			}
 			//no more children with this rule
 			//check if we can match this rule any more times
-			ParseHelper helper = new ParseHelper(buf.getDocumentPosition());
 			while (occounter.canOccurOnceMore()) {
 				final int buflen = buf.length();
 				//XXX parsehelper is shit

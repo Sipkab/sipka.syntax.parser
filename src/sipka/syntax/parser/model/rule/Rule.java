@@ -62,12 +62,12 @@ public abstract class Rule {
 	protected abstract ParsingResult parseStatementImpl(ParseHelper helper, DocumentData s, ParseContext context,
 			ParseTimeData parsedata);
 
-	protected abstract ParsingResult repairStatementImpl(Statement statement, ParsingInformation parsinginfo,
-			DocumentData s, ParseContext context, Predicate<? super Statement> modifiedstatementpredicate,
-			ParseTimeData parsedata);
+	protected abstract ParsingResult repairStatementImpl(ParseHelper helper, Statement statement,
+			ParsingInformation parsinginfo, DocumentData s, ParseContext context,
+			Predicate<? super Statement> modifiedstatementpredicate, ParseTimeData parsedata);
 
 	/**
-	 * XXX documented to avoid unused warning. might document method later
+	 * XXX documented to avoid unused warning.
 	 * 
 	 * @param statement
 	 * @param context
@@ -100,11 +100,12 @@ public abstract class Rule {
 		}
 	}
 
-	public final ParsingResult repairStatement(Statement statement, ParsingInformation parsinginfo, DocumentData s,
-			ParseContext context, Predicate<? super Statement> modifiedstatementpredicate, ParseTimeData parsedata) {
+	public final ParsingResult repairStatement(ParseHelper helper, Statement statement, ParsingInformation parsinginfo,
+			DocumentData s, ParseContext context, Predicate<? super Statement> modifiedstatementpredicate,
+			ParseTimeData parsedata) {
 //		System.out.println("Rule.repairStatement() repairing " + statement.getPosition() + " - " + statement.getValue());
-		ParsingResult result = repairStatementImpl(statement, parsinginfo, s, context, modifiedstatementpredicate,
-				parsedata);
+		ParsingResult result = repairStatementImpl(helper, statement, parsinginfo, s, context,
+				modifiedstatementpredicate, parsedata);
 		return result;
 	}
 
@@ -121,7 +122,7 @@ public abstract class Rule {
 	}
 
 	public final boolean hasParams() {
-		return params != null && params.size() > 0;
+		return params != null && !params.isEmpty();
 	}
 
 	public final List<Pair<String, Class<?>>> getDeclaredParams() {
@@ -135,22 +136,18 @@ public abstract class Rule {
 		return ruleId;
 	}
 
-	// private final static ByteArrayOutputStream COPY_BAOS = new ByteArrayOutputStream();
-	//
-	// public final Rule copy() {
-	// COPY_BAOS.reset();
-	// try (ObjectOutputStream oos = new ObjectOutputStream(COPY_BAOS)) {
-	// oos.writeObject(this);
-	// oos.flush();
-	// oos.close();
-	// try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(COPY_BAOS.toByteArray()))) {
-	// return (Rule) ois.readObject();
-	// }
-	// } catch (IOException | ClassNotFoundException e) {
-	// e.printStackTrace();
-	// }
-	// return null;
-	// }
+	@Override
+	public int hashCode() {
+		return ruleId;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		//identity equality for performance
+		//we only expect rules from the same language to be compared, 
+		//therefore we don't need to parform deeper equality checks
+		return this == obj;
+	}
 
 	public String createParameterName(String name) {
 		return PARAMETER_VAR_NAME + "_" + getRuleId() + "_" + name;

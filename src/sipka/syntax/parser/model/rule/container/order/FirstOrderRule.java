@@ -120,8 +120,9 @@ public class FirstOrderRule extends ContainerRule {
 	}
 
 	@Override
-	protected ParsingResult repairStatementImpl(Statement statement, ParsingInformation parsinginfo, DocumentData s,
-			ParseContext context, Predicate<? super Statement> modifiedstatementpredicate, ParseTimeData parsedata) {
+	protected ParsingResult repairChildren(ParseHelper helper, Statement statement, ParsingInformation parsinginfo,
+			DocumentData s, ParseContext context, Predicate<? super Statement> modifiedstatementpredicate,
+			ParseTimeData parsedata) {
 		CollectionStatement.Builder result = new CollectionStatement.Builder();
 		int startoffset = s.getDocumentOffset();
 		DocumentRegion regionofinterest = new DocumentRegion();
@@ -138,9 +139,6 @@ public class FirstOrderRule extends ContainerRule {
 		//we cant repair the child statement first, as preceding rules could match instead
 
 		OccurrenceCounter occounter = new OccurrenceCounter();
-
-		//XXX parsehelper is shit
-		ParseHelper helper = new ParseHelper(s.getDocumentPosition());
 
 		for (final Pair<Rule, ParseTimeData> rule : getChildren()) {
 			ParseTimeData parsetimedata = rule.value;
@@ -160,7 +158,7 @@ public class FirstOrderRule extends ContainerRule {
 					if (buf.getDocumentOffset() != childstm.getOffset() || modifiedstatementpredicate.test(childstm)) {
 						//repair
 						final int buflen = buf.length();
-						ParsingResult repaired = rule.key.repairStatement(childstm, childinfo, buf, rulecontext,
+						ParsingResult repaired = rule.key.repairStatement(helper, childstm, childinfo, buf, rulecontext,
 								modifiedstatementpredicate, parsedata);
 						if (repaired.isSucceeded()) {
 							if (buflen == buf.length()) {

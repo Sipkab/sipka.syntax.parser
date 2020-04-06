@@ -155,8 +155,9 @@ public class AnyOrderRule extends ContainerRule {
 	}
 
 	@Override
-	protected ParsingResult repairStatementImpl(Statement statement, ParsingInformation parsinginfo, DocumentData s,
-			ParseContext context, Predicate<? super Statement> modifiedstatementpredicate, ParseTimeData parsedata) {
+	protected ParsingResult repairChildren(ParseHelper helper, Statement statement, ParsingInformation parsinginfo,
+			DocumentData s, ParseContext context, Predicate<? super Statement> modifiedstatementpredicate,
+			ParseTimeData parsedata) {
 		DocumentData buf = new DocumentData(s);
 		final int startslen = buf.length();
 
@@ -186,8 +187,8 @@ public class AnyOrderRule extends ContainerRule {
 			if (buf.getDocumentOffset() != childstm.getOffset() || modifiedstatementpredicate.test(childstm)) {
 				//repair
 				final int buflen = buf.length();
-				ParsingResult repaired = childrule.repairStatement(childstm, childinfo, buf, contextmap.get(childrule),
-						modifiedstatementpredicate, parsedata);
+				ParsingResult repaired = childrule.repairStatement(helper, childstm, childinfo, buf,
+						contextmap.get(childrule), modifiedstatementpredicate, parsedata);
 				if (repaired.isSucceeded()) {
 					if (buflen == buf.length()) {
 						if (!occounter.isValidOccurrenceCount()) {
@@ -214,9 +215,7 @@ public class AnyOrderRule extends ContainerRule {
 				regionofinterest.expandTo(childinfo.getRegionOfInterest());
 			}
 		}
-		//XXX parsehelper is shit
-		executeParsing(new ParseHelper(buf.getDocumentPosition()), buf, result, occurrences, contextmap,
-				regionofinterest);
+		executeParsing(helper, buf, result, occurrences, contextmap, regionofinterest);
 
 		boolean failed = false;
 		for (Entry<Rule, OccurrenceCounter> entry : occurrences.entrySet()) {

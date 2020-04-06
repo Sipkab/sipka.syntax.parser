@@ -43,4 +43,18 @@ class AnyOccurrence extends Occurrence {
 	public int getRequiredMoreCount(int currentCount) {
 		return 0;
 	}
+
+	@Override
+	public int hashCode() {
+		return getClass().getName().hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		return this.getClass() == obj.getClass();
+	}
+
 }

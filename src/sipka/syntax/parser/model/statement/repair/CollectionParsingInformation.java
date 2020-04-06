@@ -51,7 +51,7 @@ public class CollectionParsingInformation extends ParsingInformation {
 
 	@Override
 	public String toString() {
-		return "CollectionParsingInformation [" + (children != null ? "children=" + children : "") + "]";
+		return getClass().getSimpleName() + "[" + (children != null ? "children=" + children : "") + "]";
 	}
 
 }

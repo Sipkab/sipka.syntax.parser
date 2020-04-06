@@ -1,5 +1,10 @@
 global(VERSION_sipka.syntax.parser) = "0.8.0"
 
+static(VERSION_saker.build) = nest.dependency.resolve(
+	saker.build,
+	Filters: nest.dependency.filter.kind([]),
+)[Bundles][0][BundleIdentifier][VersionNumber]
+
 compile(
 	out javac,
 ) {
@@ -70,5 +75,49 @@ upload(){
 		APIKey: global(sipka.syntax.parser.UPLOAD_API_KEY),
 		APISecret: global(sipka.syntax.parser.UPLOAD_API_SECRET),
 		Overwrite: true,
+	)
+}
+
+test(
+	in jreversion = 8,
+){
+	$compile = include(compile)
+	$testcompile = saker.java.compile(
+		SourceDirectories: test/src/,
+		ClassPath: [
+			$compile[javac],
+			saker.java.classpath.bundle([
+				"saker.build-test-runner-v{ static(VERSION_saker.build) }",
+				"saker.build-test-utils-v{ static(VERSION_saker.build) }",
+			]),
+		],
+		Identifier: tests
+	)
+	
+	$test = saker.java.test(
+		TestRunnerClassPath: [
+			saker.java.classpath.bundle("saker.build-test-runner-v{ static(VERSION_saker.build) }"),
+		],
+		ClassPath: $compile[javac],
+		TestInvokerClass: testing.saker.SakerJavaTestingInvoker,
+		TestClassPath: [
+			$testcompile[ClassDirectory],
+			saker.java.classpath.bundle([
+				"saker.build-test-utils-v{ static(VERSION_saker.build) }",
+			]),
+		],
+		TestClasses: [
+			**.*Test
+		],
+		NonDeterministicTests: **,
+		TestInvokerParameters: {
+			TimeoutMillis: 120000,
+		},
+		WorkingDirectory: test/resources/,
+		MaxJVMCount: 1,
+		FailFast: true,
+		AbortOnFail: true,
+		Verbose: true,
+		JavaSDK: saker.java.sdk($jreversion),
 	)
 }

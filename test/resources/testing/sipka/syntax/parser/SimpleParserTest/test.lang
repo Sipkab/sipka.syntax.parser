@@ -1,0 +1,4 @@
+language test {
+	skip "1" 1;
+	skip "2" 1;
+}

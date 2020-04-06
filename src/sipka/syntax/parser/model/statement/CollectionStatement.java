@@ -21,14 +21,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import sipka.syntax.parser.model.parse.document.DocumentData;
 import sipka.syntax.parser.model.parse.document.DocumentRegion;
 import sipka.syntax.parser.model.rule.ParsingResult;
 import sipka.syntax.parser.model.statement.repair.ParsingInformation;
 import sipka.syntax.parser.util.Pair;
-
-import java.util.TreeMap;
 
 public class CollectionStatement extends Statement implements Iterable<Statement> {
 	private static final long serialVersionUID = 7340231830076247982L;

@@ -61,15 +61,15 @@ public class InvokeRule extends Rule {
 		}
 	}
 
-	private final InvokeParam<Rule> ruleParam;
+	private final InvokeParam<? extends Rule> ruleParam;
 	private final String alias;
 	private final List<InvokeParam<?>> invokeParams;
 
-	public InvokeRule(InvokeParam<Rule> ruleParam, String alias) {
+	public InvokeRule(InvokeParam<? extends Rule> ruleParam, String alias) {
 		this(ruleParam, alias, Collections.emptyList());
 	}
 
-	public InvokeRule(InvokeParam<Rule> ruleParam, String alias, List<InvokeParam<?>> invokeParams) {
+	public InvokeRule(InvokeParam<? extends Rule> ruleParam, String alias, List<InvokeParam<?>> invokeParams) {
 		super(null);
 		this.ruleParam = ruleParam;
 		this.alias = alias;
@@ -77,7 +77,7 @@ public class InvokeRule extends Rule {
 	}
 
 	private ParsingResult executeParsing(DocumentData s, ParseContext context, ParseTimeData parsedata,
-			BiFunction<ParseContext, Rule, ParsingResult> executor) {
+			BiFunction<? super ParseContext, ? super Rule, ? extends ParsingResult> executor) {
 		Rule invokedrule = ruleParam.getValue(context);
 		if (invokedrule == null) {
 			throw new FatalParseException("Rule not found: " + ruleParam + ".");
@@ -165,13 +165,15 @@ public class InvokeRule extends Rule {
 	}
 
 	@Override
-	protected ParsingResult repairStatementImpl(Statement statement, ParsingInformation parsinginfo, DocumentData s,
-			ParseContext context, Predicate<? super Statement> modifiedstatementpredicate, ParseTimeData parsedata) {
+	protected ParsingResult repairStatementImpl(ParseHelper helper, Statement statement, ParsingInformation parsinginfo,
+			DocumentData s, ParseContext context, Predicate<? super Statement> modifiedstatementpredicate,
+			ParseTimeData parsedata) {
 		InvokeParsingInformation invokeinfo = (InvokeParsingInformation) parsinginfo;
 
 		return executeParsing(s, context, parsedata,
-				(invokeContext, invokedrule) -> invokedrule.repairStatement(statement.getDirectChildren().get(0),
-						invokeinfo.getSubInformation(), s, invokeContext, modifiedstatementpredicate, parsedata));
+				(invokeContext, invokedrule) -> invokedrule.repairStatement(helper,
+						statement.getDirectChildren().get(0), invokeinfo.getSubInformation(), s, invokeContext,
+						modifiedstatementpredicate, parsedata));
 //		Rule invokedrule = ruleParam.getValue(context);
 //		if (invokedrule == null) {
 //			throw new FatalParseException("Rule not found: " + ruleParam + ".");

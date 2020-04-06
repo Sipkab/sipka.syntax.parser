@@ -60,7 +60,7 @@ public class ParsingInformation implements Cloneable {
 
 	@Override
 	public String toString() {
-		return "ParsingInformation [" + (rule != null ? "rule=" + rule + ", " : "")
+		return getClass().getSimpleName() + "[" + (rule != null ? "rule=" + rule + ", " : "")
 				+ (regionOfInterest != null ? "regionOfInterest=" + regionOfInterest : "") + "]";
 	}
 

@@ -15,19 +15,34 @@
  */
 package sipka.syntax.parser.model.parse.context;
 
+import sipka.syntax.parser.model.rule.container.value.ValueRule.ValueConsumer;
+
 public class CallingContext extends ParseContext {
-	public static CallingContext merge(ParseContext contexta, ParseContext contextb) {
-		CallingContext result = new CallingContext();
-		result.localsMap.putAll(contexta.localsMap);
+	public static CallingContext merge(DeclaringContext contexta, ParseContext contextb) {
+		CallingContext result = new CallingContext(contexta);
 		result.localsMap.putAll(contextb.localsMap);
+		result.valueConsumer = contextb.getCurrentValueConsumer();
 		return result;
 	}
+
+	protected ValueConsumer valueConsumer;
 
 	public CallingContext() {
 	}
 
 	public CallingContext(ParseContext context) {
-		context.putAllObjectTo(localsMap);
+		super(context);
+		this.valueConsumer = context.getCurrentValueConsumer();
+	}
+
+	public CallingContext(ParseContext context, ValueConsumer consumer) {
+		super(context);
+		this.valueConsumer = consumer;
+	}
+
+	@Override
+	public ValueConsumer getCurrentValueConsumer() {
+		return valueConsumer;
 	}
 
 	public void putAllBuiltInFrom(ParseContext context) {

@@ -1,0 +1,12 @@
+language test {
+	value v 1 {
+		matches "1" 1;
+		firstorder 1 {
+			inorder 1 {
+				matches "2" 1;
+				matches "x" 1;
+			}
+			matches ".3" 1;
+		}
+	}
+}

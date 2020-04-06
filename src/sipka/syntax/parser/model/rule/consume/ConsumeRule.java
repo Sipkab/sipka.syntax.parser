@@ -140,9 +140,10 @@ public abstract class ConsumeRule extends Rule {
 	}
 
 	@Override
-	protected ParsingResult repairStatementImpl(Statement statement, ParsingInformation parsinginfo, DocumentData s,
-			ParseContext context, Predicate<? super Statement> modifiedstatementpredicate, ParseTimeData parsedata) {
-		return parseStatementImpl(null, s, context, parsedata);
+	protected ParsingResult repairStatementImpl(ParseHelper helper, Statement statement, ParsingInformation parsinginfo,
+			DocumentData s, ParseContext context, Predicate<? super Statement> modifiedstatementpredicate,
+			ParseTimeData parsedata) {
+		return parseStatementImpl(helper, s, context, parsedata);
 	}
 
 	@Override

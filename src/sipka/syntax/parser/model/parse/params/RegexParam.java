@@ -15,6 +15,7 @@
  */
 package sipka.syntax.parser.model.parse.params;
 
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 import sipka.syntax.parser.model.parse.context.ParseContext;
@@ -23,12 +24,36 @@ public class RegexParam implements InvokeParam<Pattern> {
 	private final Pattern pattern;
 
 	public RegexParam(Pattern pattern) {
+		Objects.requireNonNull(pattern, "pattern");
 		this.pattern = pattern;
 	}
 
 	@Override
 	public Pattern getValue(ParseContext context) {
 		return pattern;
+	}
+
+	@Override
+	public int hashCode() {
+		return pattern.pattern().hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		RegexParam other = (RegexParam) obj;
+		if (!this.pattern.pattern().equals(other.pattern.pattern())) {
+			return false;
+		}
+		if (this.pattern.flags() != other.pattern.flags()) {
+			return false;
+		}
+		return true;
 	}
 
 	@Override

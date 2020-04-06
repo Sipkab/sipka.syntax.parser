@@ -20,7 +20,6 @@ import java.util.regex.Pattern;
 
 import sipka.syntax.parser.model.parse.context.ParseContext;
 import sipka.syntax.parser.model.parse.params.InvokeParam;
-import sipka.syntax.parser.model.rule.container.value.ValueRule;
 import sipka.syntax.parser.model.rule.container.value.ValueRule.ValueConsumer;
 import sipka.syntax.parser.model.statement.Statement;
 
@@ -46,24 +45,24 @@ public class MatchesRule extends ConsumeRule {
 
 	@Override
 	protected void charactersConsumed(Matcher matcher, CharSequence parsed, ParseContext context) {
-		ValueConsumer targetValue = (ValueConsumer) context.getObjectForName(ValueRule.TARGET_VALUE_VAR_NAME);
+		ValueConsumer targetValue = context.getCurrentValueConsumer();
 		if (targetValue != null) {
 			if (replacement == null) {
-				targetValue.addValue(parsed);
+				targetValue.appendValue(parsed);
 			} else {
 				//TODO use StringBuilder in case of jdk 9+
 				StringBuffer sb = new StringBuffer();
 				matcher.appendReplacement(sb, replacement);
-				targetValue.addValue(sb.toString());
+				targetValue.appendValue(sb.toString());
 			}
 		}
 	}
 
 	@Override
 	protected void repairStatementSkippedImpl(Statement statement, ParseContext context) {
-		ValueConsumer targetValue = (ValueConsumer) context.getObjectForName(ValueRule.TARGET_VALUE_VAR_NAME);
+		ValueConsumer targetValue = context.getCurrentValueConsumer();
 		if (targetValue != null) {
-			targetValue.addValue(statement.getValue());
+			targetValue.appendValue(statement.getValue());
 		}
 	}
 }

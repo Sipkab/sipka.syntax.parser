@@ -33,6 +33,7 @@ import sipka.syntax.parser.model.parse.context.ParseContext;
 import sipka.syntax.parser.model.parse.document.DocumentData;
 import sipka.syntax.parser.model.parse.document.DocumentRegion;
 import sipka.syntax.parser.model.rule.Language;
+import sipka.syntax.parser.model.rule.ParseHelper;
 import sipka.syntax.parser.model.rule.ParsingResult;
 import sipka.syntax.parser.model.statement.repair.ParsingInformation;
 import sipka.syntax.parser.model.statement.repair.ReparationRegion;
@@ -213,7 +214,7 @@ public abstract class Statement implements Serializable, Cloneable {
 		}
 	}
 
-	private Map<Statement, ParsingInformation> collectAllInformation(Statement statement,
+	private static Map<Statement, ParsingInformation> collectAllInformation(Statement statement,
 			ParsingInformation parsingInformation) {
 		//create identity hashmap as the keys hash will be modified
 		Map<Statement, ParsingInformation> result = new IdentityHashMap<>();
@@ -333,8 +334,8 @@ public abstract class Statement implements Serializable, Cloneable {
 
 		String rawval = sb.toString();
 		if (contentmodifiedstatements.contains(this)) {
-			ParsingResult repaired = parsinginfo.getRule().repairStatement(this, parsinginfo, new DocumentData(sb),
-					context, contentmodifiedstatements::contains, Language.PARSE_ONCE());
+			ParsingResult repaired = parsinginfo.getRule().repairStatement(new ParseHelper(), this, parsinginfo,
+					new DocumentData(sb), context, contentmodifiedstatements::contains, Language.PARSE_ONCE());
 			if (repaired.getStatement().getEndOffset() != sb.length()) {
 				//TODO diagnostics
 				throw new ParseFailedException("Failed to parse whole input.");

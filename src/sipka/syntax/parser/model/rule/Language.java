@@ -24,10 +24,8 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.Stack;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
@@ -42,12 +40,10 @@ import sipka.syntax.parser.model.parse.ParseTimeData;
 import sipka.syntax.parser.model.parse.context.CallingContext;
 import sipka.syntax.parser.model.parse.context.DeclaringContext;
 import sipka.syntax.parser.model.parse.document.DocumentData;
-import sipka.syntax.parser.model.parse.document.DocumentRegion;
 import sipka.syntax.parser.model.parse.params.InvokeParam;
 import sipka.syntax.parser.model.parse.params.OccurrenceParam;
 import sipka.syntax.parser.model.parse.params.RegexParam;
 import sipka.syntax.parser.model.parse.params.VarReferenceParam;
-import sipka.syntax.parser.model.rule.ParseHelper.ParseFail;
 import sipka.syntax.parser.model.rule.consume.ConsumeRule;
 import sipka.syntax.parser.model.rule.consume.MatchesRule;
 import sipka.syntax.parser.model.rule.consume.SkipRule;
@@ -478,7 +474,18 @@ public class Language extends InOrderRule {
 						Language lang = new Language(name);
 
 						parseRules(langmap, lang, scoped.firstScope("body"), parseStack);
-						langmap.put(lang.getIdentifierName(), lang);
+						String langid = lang.getIdentifierName();
+						Language prev = langmap.put(langid, lang);
+						if (prev != null) {
+							throw new IllegalArgumentException("Duplicate language definitions: " + langid);
+						}
+
+						lang.setDefined();
+
+						{
+							Rule rr = lang;
+							rr.setRuleDocumentPosition(scoped.getPosition());
+						}
 						break;
 					}
 					case "invoke_node": {
@@ -494,10 +501,9 @@ public class Language extends InOrderRule {
 						} else {
 							invokeparams = Collections.emptyList();
 						}
-						final InvokeRule rule = new InvokeRule(new VarReferenceParam<>(invokename), alias,
-								invokeparams);
+						final Rule rule = new InvokeRule(new VarReferenceParam<>(invokename), alias, invokeparams);
 
-						((Rule) rule).setRuleDocumentPosition(scoped.getPosition());
+						rule.setRuleDocumentPosition(scoped.getPosition());
 
 						container.addChild(rule, new ParseTimeData(occurrence, new DeclaringContext(parseStack)));
 						break;
@@ -556,7 +562,10 @@ public class Language extends InOrderRule {
 						}
 
 						rule.setDefined();
-						((Rule) rule).setRuleDocumentPosition(scoped.getPosition());
+						{
+							Rule rr = rule;
+							rr.setRuleDocumentPosition(scoped.getPosition());
+						}
 						parseRules(langmap, rule, scoped.firstScope("body"), parseStack);
 						break;
 					}
@@ -565,9 +574,9 @@ public class Language extends InOrderRule {
 						final InvokeParam<Occurrence> occurrence = parseOccurrence(scoped);
 						final InvokeParam<Pattern> param = parseRegex(scoped);
 						final String alias = scoped.firstValue("alias_name");
-						final ConsumeRule rule = instantiateConsumeRule(type, param, alias);
+						final Rule rule = instantiateConsumeRule(type, param, alias);
 
-						((Rule) rule).setRuleDocumentPosition(scoped.getPosition());
+						rule.setRuleDocumentPosition(scoped.getPosition());
 
 						container.addChild(rule, new ParseTimeData(occurrence, new DeclaringContext(parseStack)));
 						break;
@@ -718,7 +727,7 @@ public class Language extends InOrderRule {
 		ParseHelper helper;
 		try {
 			DocumentData docdata = new DocumentData(data);
-			helper = new ParseHelper(docdata.getDocumentPosition());
+			helper = new ParseHelper();
 			if (progressmonitor != null) {
 				helper.setProgressMonitor(progressmonitor);
 			}
@@ -727,57 +736,59 @@ public class Language extends InOrderRule {
 			throw e;
 		}
 		Statement resultstm = result.getStatement();
-		if (resultstm != null && resultstm.getEndOffset() != data.length()) {
-			Set<ParseFail> fails = helper.getFails();
-			String posstring = resultstm.getEndOffset() + "";
-
-			if (infostream != null) {
-				infostream.println("Parsed: ");
-				resultstm.prettyprint(infostream);
-				infostream.println("Parse error info:");
-			}
+		if (resultstm == null || resultstm.getEndOffset() != data.length()) {
+//			Set<ParseFail> fails = helper.getFails();
+//			String posstring = resultstm.getEndOffset() + "";
+//
+//			if (infostream != null) {
+//				infostream.println("Parsed: ");
+//				resultstm.prettyprint(infostream);
+//				infostream.println("Parse error info:");
+//			}
 			//TODO DIAGNOSTICS
-			if (!fails.isEmpty()) {
-//				final int line = helper.getPosition().getLine();
-//				final int positionInLine = helper.getPosition().getPositionInLine();
-				final int posfromstart = helper.getPosition().getPositionFromStart();
-
-				posstring = posfromstart + "";//(line + 1) + ":" + (positionInLine + 1);
-				if (infostream != null) {
-					int nlineafter = data.indexOf('\n', posfromstart) - 1;
-					if (nlineafter < 0) {
-						nlineafter = data.length();
-					}
-					infostream.println(
-							"Expected at " + posstring + ": \"" + data.substring(posfromstart, nlineafter) + "\"");
-					for (ParseFail fail : fails) {
-						infostream.print("\t" + "Pattern: \"" + fail.getPattern() + "\"");
-						if (fail.getIdentifier() != null) {
-							infostream.print(" Identifier: \"" + fail.getIdentifier() + "\"");
-						}
-						infostream.println();
-						for (ListIterator<Rule> it = fail.getStack().listIterator(fail.getStack().size()); it
-								.hasPrevious();) {
-							Rule st = it.previous();
-							if (st.getIdentifierName() != null) {
-								DocumentRegion stpos = st.getRuleDocumentPosition();
-								if (stpos != null) {
-									infostream.println("\t\t" + st.getIdentifierName() + " at: " + stpos// + (stpos.getLine() + 1) + ":" + (stpos.getPositionInLine() + 1)
-									);
-								}
-							}
-						}
-					}
-				}
-			} else {
-				posstring = resultstm.getPosition() + "";// (resultstm.getEndPos().getLine() + 1) + ":" + (resultstm.getEndPos().getPositionInLine() + 1);
-				if (infostream != null) {
-					infostream.println("No matching rule found for parsing remaining data");
-				}
-			}
-			throw new ParseFailedException("Failed to parse data, no rule to parse from line: " + posstring
-					+ " Check output for more info. (Data length: " + data.length() + ", Parsed:"
-					+ resultstm.getEndOffset() + ")");
+//			if (!fails.isEmpty()) {
+////				final int line = helper.getPosition().getLine();
+////				final int positionInLine = helper.getPosition().getPositionInLine();
+//				final int posfromstart = helper.getDocumentOffset();
+//
+//				posstring = posfromstart + "";//(line + 1) + ":" + (positionInLine + 1);
+//				if (infostream != null) {
+//					int nlineafter = data.indexOf('\n', posfromstart) - 1;
+//					if (nlineafter < 0) {
+//						nlineafter = data.length();
+//					}
+//					infostream.println(
+//							"Expected at " + posstring + ": \"" + data.substring(posfromstart, nlineafter) + "\"");
+//					for (ParseFail fail : fails) {
+//						infostream.print("\t" + "Pattern: \"" + fail.getPattern() + "\"");
+//						if (fail.getIdentifier() != null) {
+//							infostream.print(" Identifier: \"" + fail.getIdentifier() + "\"");
+//						}
+//						infostream.println();
+//						for (ListIterator<Rule> it = fail.getStack().listIterator(fail.getStack().size()); it
+//								.hasPrevious();) {
+//							Rule st = it.previous();
+//							if (st.getIdentifierName() != null) {
+//								DocumentRegion stpos = st.getRuleDocumentPosition();
+//								if (stpos != null) {
+//									infostream.println("\t\t" + st.getIdentifierName() + " at: " + stpos// + (stpos.getLine() + 1) + ":" + (stpos.getPositionInLine() + 1)
+//									);
+//								}
+//							}
+//						}
+//					}
+//				}
+//			} else {
+//				posstring = resultstm.getPosition() + "";// (resultstm.getEndPos().getLine() + 1) + ":" + (resultstm.getEndPos().getPositionInLine() + 1);
+//				if (infostream != null) {
+//					infostream.println("No matching rule found for parsing remaining data");
+//				}
+//			}
+			//TODO reify error message
+			throw new ParseFailedException("Failed to parse input.");
+//			throw new ParseFailedException("Failed to parse data, no rule to parse from line: " + posstring
+//					+ " Check output for more info. (Data length: " + data.length() + ", Parsed:"
+//					+ resultstm.getEndOffset() + ")");
 		}
 		return result;
 	}
