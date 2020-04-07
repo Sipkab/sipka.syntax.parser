@@ -31,7 +31,6 @@ import sipka.syntax.parser.util.Pair;
 
 public abstract class Rule {
 	public static final String BUILTIN_VAR_PREFIX = "@";
-	private static final String REPLACE_ALIAS_VAR_NAME = BUILTIN_VAR_PREFIX + "alias_replace";
 	private static final String PARAMETER_VAR_NAME = BUILTIN_VAR_PREFIX + "param";
 
 	private static final AtomicInteger ruleCounter = new AtomicInteger();
@@ -83,23 +82,47 @@ public abstract class Rule {
 			throw new ParsingCancelledException();
 		}
 
+		final int slen = s.length();
+
+		int offset = s.getDocumentOffset();
+		ParsingResult existingresult = helper.getExistingParseResult(this, offset, context);
+		if (existingresult != null) {
+			if (existingresult.isSucceeded()) {
+				repairAndAdjustDocument(this, existingresult.getStatement(), context,
+						existingresult.getParsingInformation(), s);
+			}
+			return existingresult;
+		}
+
 		DocumentData cs = new DocumentData(s);
 
-		final int slen = cs.length();
 		ParsingResult result = parseStatementImpl(helper, cs, context, parsedata);
 
 		if (result.isSucceeded()) {
 			int count = slen - cs.length();
 			s.removeFromStart(count);
 		}
+		helper.ruleParsed(this, result, offset, context);
 		return result;
 	}
 
 	public final ParsingResult repairStatement(ParseHelper helper, Statement statement, ParsingInformation parsinginfo,
 			DocumentData s, ParseContext context, Predicate<? super Statement> modifiedstatementpredicate,
 			ParseTimeData parsedata) {
+		int offset = s.getDocumentOffset();
+		ParsingResult existingresult = helper.getExistingParseResult(this, offset, context);
+		if (existingresult != null) {
+			if (existingresult.isSucceeded()) {
+				repairAndAdjustDocument(this, existingresult.getStatement(), context,
+						existingresult.getParsingInformation(), s);
+			}
+			return existingresult;
+		}
+
 		ParsingResult result = repairStatementImpl(helper, statement, parsinginfo, s, context,
 				modifiedstatementpredicate, parsedata);
+
+		helper.ruleParsed(this, result, offset, context);
 		return result;
 	}
 
@@ -108,16 +131,14 @@ public abstract class Rule {
 		repairStatementSkippedImpl(statement, context, parsinginfo);
 	}
 
+	protected static final void repairAndAdjustDocument(Rule rule, Statement statement, ParseContext context,
+			ParsingInformation parsinginfo, DocumentData s) {
+		rule.repairStatementSkipped(statement, context, parsinginfo);
+		s.removeFromStart(statement.getLength());
+	}
+
 	public final String getIdentifierName() {
 		return identifierName;
-	}
-
-	public final int getParamsCount() {
-		return params == null ? 0 : params.size();
-	}
-
-	public final boolean hasParams() {
-		return params != null && !params.isEmpty();
 	}
 
 	public final List<Pair<String, Class<?>>> getDeclaredParams() {
@@ -146,10 +167,6 @@ public abstract class Rule {
 
 	public String createParameterName(String name) {
 		return PARAMETER_VAR_NAME + "_" + getRuleId() + "_" + name;
-	}
-
-	protected static String getRuleAliasVarName(Rule r) {
-		return REPLACE_ALIAS_VAR_NAME + r.getRuleId();
 	}
 
 }

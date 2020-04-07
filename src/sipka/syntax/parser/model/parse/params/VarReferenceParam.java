@@ -18,6 +18,7 @@ package sipka.syntax.parser.model.parse.params;
 import java.util.Objects;
 
 import sipka.syntax.parser.model.parse.context.ParseContext;
+import sipka.syntax.parser.model.rule.ParseHelper;
 
 public class VarReferenceParam<T> implements InvokeParam<T> {
 	private final String variableName;
@@ -33,10 +34,10 @@ public class VarReferenceParam<T> implements InvokeParam<T> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public T getValue(ParseContext context) {
+	public T getValue(ParseHelper helper, ParseContext context) {
 		Object result = context.getObjectForName(variableName);
 		while (result instanceof InvokeParam<?>) {
-			result = ((InvokeParam<?>) result).getValue(context);
+			result = ((InvokeParam<?>) result).getValue(helper, context);
 		}
 		return (T) result;
 	}

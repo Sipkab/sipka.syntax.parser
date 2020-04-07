@@ -16,7 +16,8 @@
 package sipka.syntax.parser.model.parse.params;
 
 import sipka.syntax.parser.model.parse.context.ParseContext;
+import sipka.syntax.parser.model.rule.ParseHelper;
 
 public interface InvokeParam<T> {
-	public T getValue(ParseContext context);
+	public T getValue(ParseHelper helper, ParseContext context);
 }

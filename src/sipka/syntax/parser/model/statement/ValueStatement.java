@@ -25,17 +25,30 @@ import sipka.syntax.parser.util.Pair;
 public class ValueStatement extends Statement {
 	private static final long serialVersionUID = -1399545866829166300L;
 
+	protected String name;
 	protected CharSequence value;
 	protected Statement subStatement;
 
 	public ValueStatement(String name, CharSequence value, Statement substatement) {
-		super(name, new DocumentRegion(substatement.getPosition()));
+		super(new DocumentRegion(substatement.getPosition()));
+		this.name = name;
 		this.value = value;
 		this.subStatement = substatement;
 	}
 
+	public ValueStatement withName(String name) {
+		ValueStatement result = this.clone();
+		result.name = name;
+		return result;
+	}
+
 	public Statement getSubStatement() {
 		return subStatement;
+	}
+
+	@Override
+	public String getName() {
+		return name;
 	}
 
 	@Override
@@ -108,6 +121,9 @@ public class ValueStatement extends Statement {
 		if (getClass() != obj.getClass())
 			return false;
 		ValueStatement other = (ValueStatement) obj;
+		if (!this.name.equals(other.name)) {
+			return false;
+		}
 		if (subStatement == null) {
 			if (other.subStatement != null)
 				return false;

@@ -25,7 +25,6 @@ import sipka.syntax.parser.model.parse.document.DocumentData;
 import sipka.syntax.parser.model.parse.document.DocumentRegion;
 import sipka.syntax.parser.model.parse.params.InvokeParam;
 import sipka.syntax.parser.model.parse.params.RegexParam;
-import sipka.syntax.parser.model.parse.params.VarReferenceParam;
 import sipka.syntax.parser.model.rule.ParseHelper;
 import sipka.syntax.parser.model.rule.ParsingResult;
 import sipka.syntax.parser.model.rule.Rule;
@@ -79,10 +78,10 @@ public abstract class ConsumeRule extends Rule {
 				new ParsingInformation(this, regionofinterest));
 	}
 
-	private CharSequence tryParse(DocumentData s, Pattern pattern, ParseContext context,
+	private CharSequence tryParse(ParseHelper helper, DocumentData s, Pattern pattern, ParseContext context,
 			DocumentRegion outregionofinterest) {
 		AccessTrackingCharSequence trackingcs = new AccessTrackingCharSequence(s);
-		Matcher matcher = pattern.matcher(trackingcs);
+		Matcher matcher = helper.getMatcher(pattern, trackingcs);
 
 		final int start;
 		final int end;
@@ -122,15 +121,10 @@ public abstract class ConsumeRule extends Rule {
 			ParseTimeData parsedata) {
 		int startoffset = s.getDocumentOffset();
 
-		Pattern pattern = param.getValue(context);
+		Pattern pattern = param.getValue(helper, context);
 		DocumentRegion regionofinterest = new DocumentRegion();
-		CharSequence parsed = tryParse(s, pattern, context, regionofinterest);
+		CharSequence parsed = tryParse(helper, s, pattern, context, regionofinterest);
 		if (parsed == null) {
-			String identifier = getIdentifierName();
-			if (identifier == null && (param instanceof VarReferenceParam<?>)) {
-				VarReferenceParam<?> vp = (VarReferenceParam<?>) param;
-				identifier = vp.getVarname();
-			}
 			return new ParsingResult(null, new ParsingInformation(this, regionofinterest));
 		}
 		DocumentRegion position = new DocumentRegion(startoffset, parsed.length());

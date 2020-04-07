@@ -78,8 +78,7 @@ public class ConsumedStatement extends Statement {
 
 	@Override
 	public ConsumedStatement clone() {
-		ConsumedStatement result = (ConsumedStatement) super.clone();
-		return result;
+		return (ConsumedStatement) super.clone();
 	}
 
 	@Override

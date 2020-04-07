@@ -43,7 +43,7 @@ public class DocumentRegion implements Cloneable, Externalizable {
 		try {
 			return (DocumentRegion) super.clone();
 		} catch (CloneNotSupportedException e) {
-			throw new RuntimeException("Cloning failed.");
+			throw new AssertionError("Cloning failed.", e);
 		}
 	}
 

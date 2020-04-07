@@ -80,8 +80,8 @@ public class FirstOrderRule extends ContainerRule {
 
 		for (final Pair<Rule, ParseTimeData> rule : getChildren()) {
 			ParseTimeData parsetimedata = rule.value;
-			CallingContext rulecontext = CallingContext.merge(parsetimedata.getDeclaringContext(), context);
-			occounter.reset(parsetimedata.getOccurrence(rulecontext));
+			ParseContext rulecontext = CallingContext.merge(parsetimedata.getDeclaringContext(), context);
+			occounter.reset(parsetimedata.getOccurrence(helper, rulecontext));
 			result.clear();
 			DocumentData buf = new DocumentData(s);
 
@@ -142,13 +142,13 @@ public class FirstOrderRule extends ContainerRule {
 
 		for (final Pair<Rule, ParseTimeData> rule : getChildren()) {
 			ParseTimeData parsetimedata = rule.value;
-			CallingContext rulecontext = CallingContext.merge(parsetimedata.getDeclaringContext(), context);
+			ParseContext rulecontext = CallingContext.merge(parsetimedata.getDeclaringContext(), context);
 			result.clear();
 
 			DocumentData buf = new DocumentData(s);
 			final int slen = buf.length();
 
-			occounter.reset(parsetimedata.getOccurrence(rulecontext));
+			occounter.reset(parsetimedata.getOccurrence(helper, rulecontext));
 			if (rule == containerinfo.parsedRule) {
 				//try to repair the previous match
 				while (childstmit.hasNext()) {
@@ -181,8 +181,7 @@ public class FirstOrderRule extends ContainerRule {
 					} else {
 						//data not changed for statement
 						occounter.addOccurrence();
-						rule.key.repairStatementSkipped(childstm, rulecontext, childinfo);
-						buf.removeFromStart(childstm.getLength());
+						repairAndAdjustDocument(rule.key, childstm, rulecontext, childinfo, buf);
 						result.add(new ParsingResult(childstm, childinfo));
 						regionofinterest.expandTo(childinfo.getRegionOfInterest());
 					}

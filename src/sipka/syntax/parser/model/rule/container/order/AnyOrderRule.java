@@ -75,16 +75,16 @@ public class AnyOrderRule extends ContainerRule {
 	private Map<Rule, ParseContext> getRuleContextMap(ParseContext context) {
 		Map<Rule, ParseContext> result = new HashMap<>();
 		for (Pair<Rule, ParseTimeData> rule : getChildren()) {
-			CallingContext rulecontext = CallingContext.merge(rule.value.getDeclaringContext(), context);
+			ParseContext rulecontext = CallingContext.merge(rule.value.getDeclaringContext(), context);
 			result.put(rule.key, rulecontext);
 		}
 		return result;
 	}
 
-	private Map<Rule, OccurrenceCounter> createOccurrencesMap(Map<Rule, ParseContext> contextmap) {
+	private Map<Rule, OccurrenceCounter> createOccurrencesMap(ParseHelper helper, Map<Rule, ParseContext> contextmap) {
 		HashMap<Rule, OccurrenceCounter> result = new HashMap<>();
 		for (Pair<Rule, ParseTimeData> rule : getChildren()) {
-			result.put(rule.key, new OccurrenceCounter(rule.value.getOccurrence(contextmap.get(rule.key))));
+			result.put(rule.key, new OccurrenceCounter(rule.value.getOccurrence(helper, contextmap.get(rule.key))));
 		}
 		return result;
 	}
@@ -99,7 +99,7 @@ public class AnyOrderRule extends ContainerRule {
 		regionofinterest.setOffset(startoffset);
 
 		Map<Rule, ParseContext> contextmap = getRuleContextMap(context);
-		Map<Rule, OccurrenceCounter> occurrences = createOccurrencesMap(contextmap);
+		Map<Rule, OccurrenceCounter> occurrences = createOccurrencesMap(helper, contextmap);
 
 		executeParsing(helper, s, result, occurrences, contextmap, regionofinterest);
 
@@ -175,7 +175,7 @@ public class AnyOrderRule extends ContainerRule {
 		Iterator<Statement> childstmit = stmchildren.listIterator();
 
 		Map<Rule, ParseContext> contextmap = getRuleContextMap(context);
-		Map<Rule, OccurrenceCounter> occurrences = createOccurrencesMap(contextmap);
+		Map<Rule, OccurrenceCounter> occurrences = createOccurrencesMap(helper, contextmap);
 
 		while (childstmit.hasNext()) {
 			Statement childstm = childstmit.next();
@@ -208,8 +208,7 @@ public class AnyOrderRule extends ContainerRule {
 			} else {
 				//data not changed for statement
 				occounter.addOccurrence();
-				childrule.repairStatementSkipped(childstm, contextmap.get(childrule), childinfo);
-				buf.removeFromStart(childstm.getLength());
+				repairAndAdjustDocument(childrule, childstm, contextmap.get(childrule), childinfo, buf);
 				result.add(new ParsingResult(childstm, childinfo));
 				regionofinterest.expandTo(childinfo.getRegionOfInterest());
 			}

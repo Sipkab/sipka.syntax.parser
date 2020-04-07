@@ -28,7 +28,6 @@ import java.util.Map.Entry;
 import java.util.function.Consumer;
 
 import sipka.syntax.parser.model.ParseFailedException;
-import sipka.syntax.parser.model.parse.context.CallingContext;
 import sipka.syntax.parser.model.parse.context.ParseContext;
 import sipka.syntax.parser.model.parse.document.DocumentData;
 import sipka.syntax.parser.model.parse.document.DocumentRegion;
@@ -42,16 +41,10 @@ import sipka.syntax.parser.util.Pair;
 public abstract class Statement implements Serializable, Cloneable {
 	private static final long serialVersionUID = 4581488159262562627L;
 
-	protected String name;
 	protected DocumentRegion position;
 
-	public Statement(String name, DocumentRegion position) {
-		this.name = name;
-		this.position = position;
-	}
-
 	public Statement(DocumentRegion position) {
-		this("", position);
+		this.position = position;
 	}
 
 	public abstract List<Statement> getDirectChildren();
@@ -95,7 +88,7 @@ public abstract class Statement implements Serializable, Cloneable {
 	}
 
 	public void collectValues(String statementname, Collection<? super String> result) {
-		if (statementname.equals(name)) {
+		if (statementname.equals(getName())) {
 			result.add(getValue());
 		}
 		for (Pair<String, Statement> s : getScopes()) {
@@ -104,7 +97,7 @@ public abstract class Statement implements Serializable, Cloneable {
 	}
 
 	public void collectValues(Map<String, ? extends Collection<String>> statementnameresults) {
-		Collection<String> coll = statementnameresults.get(name);
+		Collection<String> coll = statementnameresults.get(getName());
 		if (coll != null) {
 			coll.add(getValue());
 		}
@@ -114,7 +107,7 @@ public abstract class Statement implements Serializable, Cloneable {
 	}
 
 	public void collectStatements(String statementname, Collection<? super Statement> result) {
-		if (statementname.equals(name)) {
+		if (statementname.equals(getName())) {
 			result.add(this);
 		}
 		for (Pair<String, Statement> s : getScopes()) {
@@ -123,7 +116,7 @@ public abstract class Statement implements Serializable, Cloneable {
 	}
 
 	public void collectStatements(Map<String, ? extends Collection<Statement>> statementnameresults) {
-		Collection<Statement> coll = statementnameresults.get(name);
+		Collection<Statement> coll = statementnameresults.get(getName());
 		if (coll != null) {
 			coll.add(this);
 		}
@@ -148,8 +141,8 @@ public abstract class Statement implements Serializable, Cloneable {
 		return null;
 	}
 
-	public final String getName() {
-		return name;
+	public String getName() {
+		return "";
 	}
 
 	public final String getValue() {
@@ -389,7 +382,7 @@ public abstract class Statement implements Serializable, Cloneable {
 
 	public final ParsingResult repair(ParsingInformation parsinginfo, List<ReparationRegion> reparations)
 			throws ParseFailedException {
-		return repair(parsinginfo, reparations, new CallingContext());
+		return repair(parsinginfo, reparations, ParseContext.EMPTY);
 	}
 
 	private static StringBuilder builder = new StringBuilder();
@@ -412,7 +405,7 @@ public abstract class Statement implements Serializable, Cloneable {
 	}
 
 	public void prettyprint(PrintStream out) {
-		if ("".equals(this.name)) {
+		if ("".equals(this.getName())) {
 			prettyprint(out, this, 0);
 		} else {
 			out.println(this.getName() + ": \"" + this.getValue() + "\"");
@@ -430,7 +423,7 @@ public abstract class Statement implements Serializable, Cloneable {
 	}
 
 	public void prettyprintAll(PrintStream out) {
-		if ("".equals(this.name)) {
+		if ("".equals(this.getName())) {
 			prettyprintAll(out, this, 0);
 		} else {
 			out.println(this.getName() + ": \"" + this.getValue() + "\"");
@@ -463,7 +456,6 @@ public abstract class Statement implements Serializable, Cloneable {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		result = prime * result + ((position == null) ? 0 : position.hashCode());
 		return result;
 	}
@@ -477,11 +469,6 @@ public abstract class Statement implements Serializable, Cloneable {
 		if (getClass() != obj.getClass())
 			return false;
 		Statement other = (Statement) obj;
-		if (name == null) {
-			if (other.name != null)
-				return false;
-		} else if (!name.equals(other.name))
-			return false;
 		if (position == null) {
 			if (other.position != null)
 				return false;
@@ -494,7 +481,7 @@ public abstract class Statement implements Serializable, Cloneable {
 		if (other == null) {
 			return false;
 		}
-		if (!this.name.equals(other.name)) {
+		if (!this.getName().equals(other.getName())) {
 			return false;
 		}
 		if (!toValueSequence().equals(other.toValueSequence())) {

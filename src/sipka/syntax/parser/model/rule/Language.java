@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -39,8 +40,8 @@ import sipka.syntax.parser.model.manipulate.Manipulator;
 import sipka.syntax.parser.model.manipulate.ModifiableStatement;
 import sipka.syntax.parser.model.occurrence.Occurrence;
 import sipka.syntax.parser.model.parse.ParseTimeData;
-import sipka.syntax.parser.model.parse.context.CallingContext;
 import sipka.syntax.parser.model.parse.context.DeclaringContext;
+import sipka.syntax.parser.model.parse.context.ParseContext;
 import sipka.syntax.parser.model.parse.document.DocumentData;
 import sipka.syntax.parser.model.parse.params.InvokeParam;
 import sipka.syntax.parser.model.parse.params.OccurrenceParam;
@@ -71,23 +72,23 @@ public class Language extends InOrderRule {
 	public static final Language DESCRIBER_LANGUAGE;
 
 	public static ParseTimeData PARSE_ONCE() {
-		return new ParseTimeData(Occurrence.ONCE, new DeclaringContext());
+		return new ParseTimeData(Occurrence.ONCE, DeclaringContext.EMPTY);
 	}
 
 	public static ParseTimeData PARSE_ANY() {
-		return new ParseTimeData(Occurrence.ANY, new DeclaringContext());
+		return new ParseTimeData(Occurrence.ANY, DeclaringContext.EMPTY);
 	}
 
 	public static ParseTimeData PARSE_OPTIONAL() {
-		return new ParseTimeData(Occurrence.OPTIONAL, new DeclaringContext());
+		return new ParseTimeData(Occurrence.OPTIONAL, DeclaringContext.EMPTY);
 	}
 
 	public static ParseTimeData PARSE_MIN_ONCE() {
-		return new ParseTimeData(Occurrence.MIN_ONCE, new DeclaringContext());
+		return new ParseTimeData(Occurrence.MIN_ONCE, DeclaringContext.EMPTY);
 	}
 
 	public static ParseTimeData PARSE(Occurrence occurr) {
-		return new ParseTimeData(occurr, new DeclaringContext());
+		return new ParseTimeData(occurr, DeclaringContext.EMPTY);
 	}
 
 	static {
@@ -455,7 +456,8 @@ public class Language extends InOrderRule {
 		}
 	}
 
-	private static Object getObjectWithIdentifier(Stack<Pair<String, Object>> parseStack, String searchIdentifier) {
+	private static Object getObjectWithIdentifier(ArrayDeque<Pair<String, Object>> parseStack,
+			String searchIdentifier) {
 		for (Pair<String, Object> pair : parseStack) {
 			if (pair.key.equals(searchIdentifier)) {
 				return pair.value;
@@ -473,7 +475,7 @@ public class Language extends InOrderRule {
 	}
 
 	private static void parseRulesImpl(Map<String, Language> langmap, ContainerRule container, Statement stm,
-			Stack<Pair<String, Object>> parseStack, Set<Rule> undefinedrules) throws ParseFailedException {
+			ArrayDeque<Pair<String, Object>> parseStack, Set<Rule> undefinedrules) throws ParseFailedException {
 		int parseStackAdded = 0;
 		try {
 			for (Pair<String, Statement> scopepair : stm.getScopes()) {
@@ -524,21 +526,27 @@ public class Language extends InOrderRule {
 						final ContainerRule rule;
 
 						if (name != null) {
-							Object found = getObjectWithIdentifier(parseStack, name);
+							RuleDeclaration found = (RuleDeclaration) getObjectWithIdentifier(parseStack, name);
 							if (found != null) {
 								// found in stack
-								if (found.getClass() != stringToTypename(type)) {
+								Rule foundrule = found.getRule();
+								if (found.getDeclarationContext() != null) {
+									throw new ParseFailedException("Container node was already defined previously: "
+											+ name + " redeclare at: " + scoped.toDocumentPositionString());
+								}
+								if (foundrule.getClass() != stringToTypename(type)) {
 									throw new ParseFailedException(
 											"Container node was declared previously with different type: "
 													+ found.getClass().getSimpleName() + " - " + stringToTypename(type)
 													+ " - " + name);
 								}
+								found.setDeclarationContext(new DeclaringContext(parseStack));
 
-								if (!undefinedrules.remove(found)) {
+								if (!undefinedrules.remove(foundrule)) {
 									throw new ParseFailedException("Container node was already defined previously: "
 											+ name + " redeclare at: " + scoped.toDocumentPositionString());
 								}
-								rule = (ContainerRule) found;
+								rule = (ContainerRule) foundrule;
 							} else {
 								// was not in stack
 								rule = instantiateContainerRule(type, name);
@@ -548,7 +556,8 @@ public class Language extends InOrderRule {
 										vr.setNonEmpty(true);
 									}
 								}
-								parseStack.push(new Pair<>(rule.getIdentifierName(), rule));
+								parseStack.push(new Pair<>(rule.getIdentifierName(),
+										new RuleDeclaration(rule, new DeclaringContext(parseStack))));
 								++parseStackAdded;
 							}
 						} else {
@@ -557,7 +566,7 @@ public class Language extends InOrderRule {
 
 						parseDeclaredParams(scoped, rule);
 						for (Pair<String, Class<?>> param : rule.getDeclaredParams()) {
-							parseStack.add(new Pair<String, Object>(param.key,
+							parseStack.add(new Pair<>(param.key,
 									new VarReferenceParam<>(rule.createParameterName(param.key))));
 							++parseStackAdded;
 						}
@@ -590,8 +599,8 @@ public class Language extends InOrderRule {
 					}
 					case "declare_node": {
 						final String type = scoped.firstScope("type").getValue();
-						final String value = scoped.firstScope("expression").getValue();
 						final String name = scoped.firstScope("name").getValue();
+						final String value = scoped.firstScope("expression").getValue();
 						final Object parsed = instantiateDeclaredObject(type, value);
 
 						parseStack.push(new Pair<>(name, parsed));
@@ -616,7 +625,7 @@ public class Language extends InOrderRule {
 							ContainerRule rule = instantiateContainerRule(type, name);
 							undefinedrules.add(rule);
 							// add to stack
-							parseStack.push(new Pair<>(rule.getIdentifierName(), rule));
+							parseStack.push(new Pair<>(rule.getIdentifierName(), new RuleDeclaration(rule)));
 							++parseStackAdded;
 						}
 						break;
@@ -652,13 +661,13 @@ public class Language extends InOrderRule {
 		}
 	}
 
-	private static Stack<Pair<String, Object>> addDefaultRulesToStack(Stack<Pair<String, Object>> stack) {
+	private static ArrayDeque<Pair<String, Object>> addDefaultRulesToStack(ArrayDeque<Pair<String, Object>> stack) {
 		stack.push(new Pair<>("whitespace", WHITESPACE_PATTERN));
 		return stack;
 	}
 
-	private static Stack<Pair<String, Object>> ruleStackWithDefaultRules() {
-		return addDefaultRulesToStack(new Stack<>());
+	private static ArrayDeque<Pair<String, Object>> ruleStackWithDefaultRules() {
+		return addDefaultRulesToStack(new ArrayDeque<>());
 	}
 
 	public static Map<String, Language> fromFile(File f) throws IOException, ParseFailedException {
@@ -739,7 +748,7 @@ public class Language extends InOrderRule {
 			if (progressmonitor != null) {
 				helper.setProgressMonitor(progressmonitor);
 			}
-			result = parseStatement(helper, docdata, new CallingContext(), PARSE_ONCE());
+			result = parseStatement(helper, docdata, ParseContext.EMPTY, PARSE_ONCE());
 		} catch (FatalParseException e) {
 			throw e;
 		}

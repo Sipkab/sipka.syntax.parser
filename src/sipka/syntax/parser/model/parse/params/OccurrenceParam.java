@@ -20,6 +20,7 @@ import java.util.Objects;
 import sipka.syntax.parser.model.ParseFailedException;
 import sipka.syntax.parser.model.occurrence.Occurrence;
 import sipka.syntax.parser.model.parse.context.ParseContext;
+import sipka.syntax.parser.model.rule.ParseHelper;
 
 public class OccurrenceParam implements InvokeParam<Occurrence> {
 	private final Occurrence occurrence;
@@ -34,7 +35,7 @@ public class OccurrenceParam implements InvokeParam<Occurrence> {
 	}
 
 	@Override
-	public Occurrence getValue(ParseContext context) {
+	public Occurrence getValue(ParseHelper helper, ParseContext context) {
 		return occurrence;
 	}
 

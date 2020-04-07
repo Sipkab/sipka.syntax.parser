@@ -8,7 +8,6 @@ public class RepairValueSkipTest extends ParserTestCase {
 
 	@Override
 	protected void runTestImpl() throws Throwable {
-		// TODO Auto-generated method stub
 		ParsingResult result = parseData("123abc");
 		assertEquals(result.getStatement().firstValue("v"), "123abc");
 

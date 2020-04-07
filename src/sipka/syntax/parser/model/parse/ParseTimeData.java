@@ -20,9 +20,10 @@ import sipka.syntax.parser.model.parse.context.DeclaringContext;
 import sipka.syntax.parser.model.parse.context.ParseContext;
 import sipka.syntax.parser.model.parse.params.InvokeParam;
 import sipka.syntax.parser.model.parse.params.OccurrenceParam;
+import sipka.syntax.parser.model.rule.ParseHelper;
 
 public final class ParseTimeData {
-	private final InvokeParam<Occurrence> occurrenceParam;
+	private final InvokeParam<? extends Occurrence> occurrenceParam;
 	private final DeclaringContext declaringContext;
 
 	public ParseTimeData(Occurrence occurrence, DeclaringContext declaringContext) {
@@ -30,13 +31,13 @@ public final class ParseTimeData {
 		this.occurrenceParam = new OccurrenceParam(occurrence);
 	}
 
-	public ParseTimeData(InvokeParam<Occurrence> occurrence, DeclaringContext declaringContext) {
+	public ParseTimeData(InvokeParam<? extends Occurrence> occurrence, DeclaringContext declaringContext) {
 		this.declaringContext = declaringContext;
 		this.occurrenceParam = occurrence;
 	}
 
-	public final Occurrence getOccurrence(ParseContext context) {
-		return occurrenceParam.getValue(context);
+	public final Occurrence getOccurrence(ParseHelper helper, ParseContext context) {
+		return occurrenceParam.getValue(helper, context);
 	}
 
 	public final DeclaringContext getDeclaringContext() {

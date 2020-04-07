@@ -15,13 +15,19 @@
  */
 package sipka.syntax.parser.model.rule;
 
-import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import sipka.syntax.parser.model.parse.context.ParseContext;
 import sipka.syntax.parser.model.rule.Language.ParseProgressMonitor;
 
 public class ParseHelper {
@@ -80,11 +86,94 @@ public class ParseHelper {
 		}
 	}
 
+	public static class RuleParseStateKey {
+		private final Rule rule;
+		private final int offset;
+
+		public RuleParseStateKey(Rule rule, int offset) {
+			this.rule = rule;
+			this.offset = offset;
+		}
+
+		@Override
+		public int hashCode() {
+			return rule.hashCode() ^ offset;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			RuleParseStateKey other = (RuleParseStateKey) obj;
+			if (offset != other.offset)
+				return false;
+			if (!rule.equals(other.rule))
+				return false;
+			return true;
+		}
+	}
+
+	public static class RuleParseStateValue {
+		private ParsingResult result;
+		private ParseContext context;
+
+		public RuleParseStateValue(ParsingResult result, ParseContext context) {
+			this.result = result;
+			this.context = context;
+		}
+
+		public boolean isSuitableContext(ParseContext context) {
+			return context.equals(this.context);
+		}
+
+		public ParsingResult getResult() {
+			return result;
+		}
+	}
+
 	private Set<ParseFail> fails = new HashSet<>();
 
 	private ParseProgressMonitor monitor = ParseProgressMonitor.NULLMONITOR;
 
+	private final Map<RuleParseStateKey, Collection<RuleParseStateValue>> parsedRulesCache = new HashMap<>();
+
+	private final Map<Pattern, Matcher> matcherCache = new HashMap<>();
+
 	public ParseHelper() {
+	}
+
+	public Matcher getMatcher(Pattern pattern, CharSequence input) {
+		return matcherCache.compute(pattern, (p, m) -> {
+			if (m == null) {
+				return p.matcher(input);
+			}
+			m.reset(input);
+			return m;
+		});
+	}
+
+	public ParsingResult getExistingParseResult(Rule rule, int offset, ParseContext context) {
+		RuleParseStateKey key = new RuleParseStateKey(rule, offset);
+		Collection<RuleParseStateValue> states = parsedRulesCache.get(key);
+		if (states == null) {
+			return null;
+		}
+		for (RuleParseStateValue sval : states) {
+			if (sval.isSuitableContext(context)) {
+				return sval.getResult();
+			}
+		}
+		return null;
+	}
+
+	public void ruleParsed(Rule rule, ParsingResult result, int offset, ParseContext context) {
+		RuleParseStateKey key = new RuleParseStateKey(rule, offset);
+		RuleParseStateValue stateval = new RuleParseStateValue(result, context);
+		parsedRulesCache.computeIfAbsent(key, x -> new ArrayList<>()).add(stateval);
 	}
 
 	public void setProgressMonitor(ParseProgressMonitor monitor) {

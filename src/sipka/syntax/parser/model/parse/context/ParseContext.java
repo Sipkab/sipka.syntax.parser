@@ -15,26 +15,60 @@
  */
 package sipka.syntax.parser.model.parse.context;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+import sipka.syntax.parser.model.ParseFailedException;
 import sipka.syntax.parser.model.rule.Rule;
 import sipka.syntax.parser.model.rule.container.value.ValueConsumer;
+import sipka.syntax.parser.util.Pair;
 
-public abstract class ParseContext {
+public class ParseContext {
+	public static final ParseContext EMPTY = new ParseContext(Collections.emptyNavigableMap());
+
+	public static final int FLAG_PARENT_BUILTINS_ONLY = 1 << 0;
+
+	protected final ParseContext parent;
+	protected final int parentFlags;
 	protected final NavigableMap<String, Object> localsMap;
 
-	public ParseContext() {
-		this.localsMap = new TreeMap<>();
+	protected ParseContext(ParseContext parent, int parentflags, NavigableMap<String, Object> localsMap) {
+		this.parent = parent;
+		this.parentFlags = parentflags;
+		this.localsMap = localsMap;
 	}
 
-	public ParseContext(ParseContext context) {
-		this.localsMap = new TreeMap<>(context.localsMap);
+	protected ParseContext(NavigableMap<String, Object> localsMap) {
+		this(null, 0, localsMap);
+	}
+
+	public ParseContext(Collection<Pair<String, Object>> locals) throws ParseFailedException {
+		this(toLocalsMap(locals));
+	}
+
+	private static NavigableMap<String, Object> toLocalsMap(Collection<Pair<String, Object>> locals)
+			throws ParseFailedException {
+		if (locals.isEmpty()) {
+			return Collections.emptyNavigableMap();
+		}
+		TreeMap<String, Object> initlocals = new TreeMap<>();
+		for (Pair<String, Object> local : locals) {
+			Object prev = initlocals.put(local.key, local.value);
+			if (prev != null) {
+				throw new ParseFailedException("Dupliate variables in scope with name: " + local.key);
+			}
+		}
+		return initlocals;
 	}
 
 	public ValueConsumer getCurrentValueConsumer() {
+		if (parent != null) {
+			return parent.getCurrentValueConsumer();
+		}
 		return null;
 	}
 
@@ -44,11 +78,21 @@ public abstract class ParseContext {
 
 	public Object getObjectForName(String name, Object defaultValue) {
 		Object result = localsMap.get(name);
-		if (result == null)
-			return defaultValue;
-		return result;
+		if (result != null) {
+			return result;
+		}
+		if (parent != null) {
+			if (((parentFlags & FLAG_PARENT_BUILTINS_ONLY) == FLAG_PARENT_BUILTINS_ONLY)) {
+				if (!(name.startsWith(Rule.BUILTIN_VAR_PREFIX))) {
+					return defaultValue;
+				}
+			}
+			return parent.getObjectForName(name, defaultValue);
+		}
+		return defaultValue;
 	}
 
+	@Deprecated
 	protected void putAllBuiltInTo(Map<String, Object> target) {
 		if (localsMap.isEmpty()) {
 			return;
@@ -62,7 +106,42 @@ public abstract class ParseContext {
 	}
 
 	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((localsMap == null) ? 0 : localsMap.hashCode());
+		result = prime * result + ((parent == null) ? 0 : parent.hashCode());
+		result = prime * result + parentFlags;
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ParseContext other = (ParseContext) obj;
+		if (localsMap == null) {
+			if (other.localsMap != null)
+				return false;
+		} else if (!localsMap.equals(other.localsMap))
+			return false;
+		if (parent == null) {
+			if (other.parent != null)
+				return false;
+		} else if (!parent.equals(other.parent))
+			return false;
+		if (parentFlags != other.parentFlags)
+			return false;
+		return true;
+	}
+
+	@Override
 	public String toString() {
 		return "ParseContext [localsMap=" + localsMap + "]";
 	}
+
 }

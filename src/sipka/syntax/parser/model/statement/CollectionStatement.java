@@ -185,7 +185,7 @@ public class CollectionStatement extends Statement implements Iterable<Statement
 	@Override
 	public CollectionStatement clone() {
 		CollectionStatement result = (CollectionStatement) super.clone();
-		result.children = new ArrayList<>();
+		result.children = new ArrayList<>(this.children.size());
 		for (Statement c : this.children) {
 			result.children.add(c.clone());
 		}

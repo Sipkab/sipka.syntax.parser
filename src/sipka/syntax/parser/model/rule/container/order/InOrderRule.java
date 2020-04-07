@@ -80,9 +80,9 @@ public class InOrderRule extends ContainerRule {
 		for (final Pair<Rule, ParseTimeData> rule : getChildren()) {
 			ParseTimeData parsetimedata = rule.value;
 
-			CallingContext rulecontext = CallingContext.merge(parsetimedata.getDeclaringContext(), context);
+			ParseContext rulecontext = CallingContext.merge(parsetimedata.getDeclaringContext(), context);
 
-			OccurrenceCounter occounter = new OccurrenceCounter(parsetimedata.getOccurrence(rulecontext));
+			OccurrenceCounter occounter = new OccurrenceCounter(parsetimedata.getOccurrence(helper, rulecontext));
 
 			occurrences.add(occounter);
 			while (occounter.canOccurOnceMore()) {
@@ -149,9 +149,9 @@ public class InOrderRule extends ContainerRule {
 		}
 		for (final Pair<Rule, ParseTimeData> rulepair : getChildren()) {
 			ParseTimeData parsetimedata = rulepair.value;
-			CallingContext rulecontext = CallingContext.merge(parsetimedata.getDeclaringContext(), context);
+			ParseContext rulecontext = CallingContext.merge(parsetimedata.getDeclaringContext(), context);
 
-			OccurrenceCounter occounter = new OccurrenceCounter(parsetimedata.getOccurrence(rulecontext));
+			OccurrenceCounter occounter = new OccurrenceCounter(parsetimedata.getOccurrence(helper, rulecontext));
 //			occurrences.add(occounter);
 
 			while (childrule == rulepair.key) {
@@ -182,8 +182,7 @@ public class InOrderRule extends ContainerRule {
 				} else {
 					//no need to repair
 					occounter.addOccurrence();
-					childrule.repairStatementSkipped(childstm, rulecontext, childinfo);
-					buf.removeFromStart(childstm.getLength());
+					repairAndAdjustDocument(childrule, childstm, rulecontext, childinfo, buf);
 					result.add(new ParsingResult(childstm, childinfo));
 					regionofinterest.expandTo(childinfo.getRegionOfInterest());
 				}

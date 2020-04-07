@@ -15,45 +15,74 @@
  */
 package sipka.syntax.parser.model.parse.context;
 
+import java.util.NavigableMap;
+
 import sipka.syntax.parser.model.rule.container.value.ValueConsumer;
 
 public class CallingContext extends ParseContext {
-	public static CallingContext merge(DeclaringContext contexta, ParseContext contextb) {
-		CallingContext result = new CallingContext(contexta);
-		result.localsMap.putAll(contextb.localsMap);
-		result.valueConsumer = contextb.getCurrentValueConsumer();
-		return result;
+	public static ParseContext merge(DeclaringContext contexta, ParseContext contextb) {
+		return new CallingContext(contexta, 0, contextb.localsMap, contextb.getCurrentValueConsumer());
+//		if (contexta.localsMap.isEmpty()) {
+//			return contextb;
+//		}
+//		if (contextb.localsMap.isEmpty()) {
+//			return new CallingContext(contexta.localsMap, contextb.getCurrentValueConsumer());
+//		}
+//		NavigableMap<String, Object> localsMap;
+//		localsMap = new TreeMap<>(contexta.localsMap);
+//		localsMap.putAll(contextb.localsMap);
+//		return new CallingContext(localsMap, contextb.getCurrentValueConsumer());
 	}
 
-	public static CallingContext mergeWithBuiltIns(DeclaringContext contexta, ParseContext contextb) {
-		CallingContext result = new CallingContext(contexta);
-		contextb.putAllBuiltInTo(result.localsMap);
-		result.valueConsumer = contextb.getCurrentValueConsumer();
-		return result;
+	public static ParseContext mergeWithBuiltInsAndVariables(ParseContext contexta, DeclaringContext contextb,
+			NavigableMap<String, Object> vars) {
+		return new ParseContext(new ParseContext(contexta, 0, contextb.localsMap), FLAG_PARENT_BUILTINS_ONLY, vars);
+//		if (vars.isEmpty()) {
+//			//we can avoid creating a new Map if there are no variables and no builtins
+//			NavigableMap<String, Object> localmap = null;
+//			for (Entry<String, Object> entry : contextb.localsMap.entrySet()) {
+//				String key = entry.getKey();
+//				if (key.startsWith(Rule.BUILTIN_VAR_PREFIX)) {
+//					if (localmap == null) {
+//						localmap = new TreeMap<>(contexta.localsMap);
+//					}
+//					localmap.put(key, entry.getValue());
+//				}
+//			}
+//			if (localmap == null) {
+//				localmap = contexta.localsMap;
+//			}
+//			CallingContext result = new CallingContext(localmap, contextb.getCurrentValueConsumer());
+//			return result;
+//		}
+//		CallingContext result = new CallingContext(new TreeMap<>(contexta.localsMap),
+//				contextb.getCurrentValueConsumer());
+//		contextb.putAllBuiltInTo(result.localsMap);
+//		result.localsMap.putAll(vars);
+//		return result;
 	}
 
-	protected ValueConsumer valueConsumer;
+	protected transient ValueConsumer valueConsumer;
 
-	public CallingContext() {
+	public CallingContext(ParseContext parent, int parentflags, NavigableMap<String, Object> localsMap,
+			ValueConsumer valueConsumer) {
+		super(parent, parentflags, localsMap);
+		this.valueConsumer = valueConsumer;
 	}
 
-	public CallingContext(ParseContext context) {
-		super(context);
-		this.valueConsumer = context.getCurrentValueConsumer();
+	protected CallingContext(NavigableMap<String, Object> localsMap, ValueConsumer valueConsumer) {
+		super(localsMap);
+		this.valueConsumer = valueConsumer;
 	}
 
 	public CallingContext(ParseContext context, ValueConsumer consumer) {
-		super(context);
+		super(context.localsMap);
 		this.valueConsumer = consumer;
 	}
 
 	@Override
 	public ValueConsumer getCurrentValueConsumer() {
 		return valueConsumer;
-	}
-
-	public void putObject(String name, Object item) {
-		localsMap.put(name, item);
 	}
 
 	@Override

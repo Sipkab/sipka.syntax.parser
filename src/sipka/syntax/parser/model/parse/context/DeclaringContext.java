@@ -16,18 +16,21 @@
 package sipka.syntax.parser.model.parse.context;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.NavigableMap;
 
+import sipka.syntax.parser.model.ParseFailedException;
 import sipka.syntax.parser.util.Pair;
 
 public class DeclaringContext extends ParseContext {
+	public static final DeclaringContext EMPTY = new DeclaringContext(Collections.emptyNavigableMap());
 
-	public DeclaringContext() {
+	private DeclaringContext(NavigableMap<String, Object> localsMap) {
+		super(localsMap);
 	}
 
-	public DeclaringContext(Collection<Pair<String, Object>> locals) {
-		for (Pair<String, Object> local : locals) {
-			localsMap.put(local.key, local.value);
-		}
+	public DeclaringContext(Collection<Pair<String, Object>> locals) throws ParseFailedException {
+		super(locals);
 	}
 
 	@Override

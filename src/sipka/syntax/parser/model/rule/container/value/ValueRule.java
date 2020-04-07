@@ -76,9 +76,8 @@ public class ValueRule extends InOrderRule {
 		super(valueName);
 	}
 
-	private ParsingResult executeParsing(ParseContext context, Function<ParseContext, ParsingResult> executor) {
-		final String alias = (String) context.getObjectForName(getRuleAliasVarName(this), getIdentifierName());
-
+	private ParsingResult executeParsing(ParseContext context,
+			Function<? super ParseContext, ? extends ParsingResult> executor) {
 		ValueConsumer valueconsumer = new ValueConsumer();
 		CallingContext valuecontext = new CallingContext(context, valueconsumer);
 
@@ -92,7 +91,7 @@ public class ValueRule extends InOrderRule {
 		}
 		Statement parsedchildrenstm = parsedchildrenresult.getStatement();
 
-		ValueStatement valuestm = new ValueStatement(alias, parsedval.toString(), parsedchildrenstm);
+		ValueStatement valuestm = new ValueStatement(getIdentifierName(), parsedval.toString(), parsedchildrenstm);
 		return new ParsingResult(valuestm, usingparsinginfo);
 	}
 

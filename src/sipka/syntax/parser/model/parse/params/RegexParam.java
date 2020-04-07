@@ -19,6 +19,7 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 
 import sipka.syntax.parser.model.parse.context.ParseContext;
+import sipka.syntax.parser.model.rule.ParseHelper;
 
 public class RegexParam implements InvokeParam<Pattern> {
 	private final Pattern pattern;
@@ -29,7 +30,7 @@ public class RegexParam implements InvokeParam<Pattern> {
 	}
 
 	@Override
-	public Pattern getValue(ParseContext context) {
+	public Pattern getValue(ParseHelper helper, ParseContext context) {
 		return pattern;
 	}
 
