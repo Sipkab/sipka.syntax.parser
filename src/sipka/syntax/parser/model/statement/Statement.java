@@ -18,6 +18,7 @@ package sipka.syntax.parser.model.statement;
 import java.io.PrintStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -36,6 +37,7 @@ import sipka.syntax.parser.model.rule.ParseHelper;
 import sipka.syntax.parser.model.rule.ParsingResult;
 import sipka.syntax.parser.model.statement.repair.ParsingInformation;
 import sipka.syntax.parser.model.statement.repair.ReparationRegion;
+import sipka.syntax.parser.util.ArrayRangeCharSequence;
 import sipka.syntax.parser.util.Pair;
 
 public abstract class Statement implements Serializable, Cloneable {
@@ -53,9 +55,9 @@ public abstract class Statement implements Serializable, Cloneable {
 
 	public abstract List<Pair<String, Statement>> getScopes();
 
-	protected abstract CharSequence toValueSequence();
+	protected abstract ArrayRangeCharSequence toValueSequence();
 
-	protected abstract CharSequence toRawSequence();
+	protected abstract ArrayRangeCharSequence toRawSequence();
 
 	public abstract List<Statement> scopeTo(String scoper);
 
@@ -153,11 +155,19 @@ public abstract class Statement implements Serializable, Cloneable {
 		return toRawSequence().toString();
 	}
 
+	public final CharSequence getValueSequence() {
+		return toValueSequence();
+	}
+
+	public final CharSequence getRawValueSequence() {
+		return toRawSequence();
+	}
+
 	@Override
 	public Statement clone() {
 		try {
 			Statement result = (Statement) super.clone();
-			result.position = new DocumentRegion(this.position);
+			result.position = this.position.clone();
 			return result;
 		} catch (CloneNotSupportedException e) {
 			throw new RuntimeException("Failed to clone " + this.getClass());
@@ -249,24 +259,41 @@ public abstract class Statement implements Serializable, Cloneable {
 		}
 	}
 
+	private static int getFinalLength(int original, Iterable<ReparationRegion> reparations, int[] outmaxdiff) {
+		int maxdiff = 0;
+		for (ReparationRegion rr : reparations) {
+			CharSequence text = rr.getText();
+			int tlen = text.length();
+			int diff = tlen - rr.getLength();
+			original = original + diff;
+			if (diff > maxdiff) {
+				maxdiff = diff;
+			}
+		}
+		outmaxdiff[0] = maxdiff;
+		return original;
+	}
+
 	private ParsingResult repairImpl(ParsingInformation parsinginfo, List<ReparationRegion> reparations,
 			ParseContext context) throws ParseFailedException {
-//		System.out.println("Statement.repairImpl() " + reparations);
 		Map<Statement, ParsingInformation> allinformation = collectAllInformation(this, parsinginfo);
 		Collection<Statement> contentmodifiedstatements = Collections
 				.newSetFromMap(new IdentityHashMap<>(allinformation.size()));
 
-//		System.out.println("pre-modify structure: ");
-//		this.prettyprintAll(System.out);
+		ArrayRangeCharSequence originalrawseq = toRawSequence();
 
-		StringBuilder sb = new StringBuilder(toRawSequence());
+		int[] maxdiff = { 0 };
+		int originallength = originalrawseq.length();
+		int newlen = getFinalLength(originallength, reparations, maxdiff);
+		char[] nrawarray = Arrays.copyOfRange(originalrawseq.array(), originalrawseq.index(),
+				Math.max(originallength + maxdiff[0], newlen));
+
 		for (ReparationRegion r : reparations) {
-//			System.out.println("Statement.repairImpl() " + r);
 			int regionoffset = r.getOffset();
 			int deletelength = r.getLength();
 			CharSequence rtext = r.getText();
 			int insertlength = rtext == null ? 0 : rtext.length();
-			r.apply(sb);
+			r.apply(nrawarray);
 			if (deletelength > 0) {
 				for (Entry<Statement, ParsingInformation> entry : allinformation.entrySet()) {
 					Statement s = entry.getKey();
@@ -303,49 +330,16 @@ public abstract class Statement implements Serializable, Cloneable {
 					}
 				}
 			}
-//			System.out.println("Statement.repairImpl() " + contentmodifiedstatements.stream().map(Statement::getPosition).collect(Collectors.toList()));
-//			System.out.println(sb);
-//			System.out.println();
 		}
 
-//		System.out.println(sb);
-//		System.out.println();
-//		System.out.println("Pre-repair structure:");
-//		this.prettyprintAll(System.out);
-//
-//		System.out.println();
-//		System.out.println("Region of interests:");
-//		for (Entry<Statement, ParsingInformation> entry : allinformation.entrySet()) {
-//			DocumentRegion spos = entry.getKey().getPosition();
-//			DocumentRegion regionofinterest = entry.getValue().getRegionOfInterest();
-//			System.out.println("\t" + spos + " -> " + regionofinterest + " --- " + entry.getKey() + " - "
-//					+ System.identityHashCode(entry.getValue().getRegionOfInterest()));
-//			if (!regionofinterest.isInside(spos)) {
-//				throw new IllegalStateException("Statement position is not fully inside its interest region. " + spos + " - " + regionofinterest);
-//			}
-//		}
-
-		String rawval = sb.toString();
 		if (contentmodifiedstatements.contains(this)) {
+			DocumentData ndocdata = new DocumentData(nrawarray, 0, newlen);
 			ParsingResult repaired = parsinginfo.getRule().repairStatement(new ParseHelper(), this, parsinginfo,
-					new DocumentData(sb), context, contentmodifiedstatements::contains, Language.PARSE_ONCE());
-			if (repaired.getStatement().getEndOffset() != sb.length()) {
+					ndocdata, context, contentmodifiedstatements::contains, Language.PARSE_ONCE());
+			if (repaired.getStatement().getEndOffset() != newlen) {
 				//TODO diagnostics
 				throw new ParseFailedException("Failed to parse whole input.");
 			}
-			String nraw = repaired.getStatement().getRawValue();
-			if (!nraw.equals(rawval)) {
-				System.err.println("Statement.repairImpl() expected raw value:");
-				System.err.println(rawval);
-				System.err.println("Statement.repairImpl() repaired raw value:");
-				System.err.println(nraw);
-				System.err.println();
-				repaired.getStatement().prettyprintAll(System.err);
-				throw new ParseFailedException("Raw values doesnt match");
-			}
-//			System.out.println("Post-repair structure:");
-//			repaired.getStatement().prettyprint(System.out);
-//			repaired.printInformationStructure(System.out);
 			return repaired;
 		}
 		return new ParsingResult(this, parsinginfo);
@@ -360,24 +354,6 @@ public abstract class Statement implements Serializable, Cloneable {
 		Statement stm = this.clone();
 		ParsingInformation infoclone = parsinginfo.clone();
 		return stm.repairImpl(infoclone, reparations, context);
-		//		return new OffsetCharSequence(sb, 0, sb.length());
-
-//		DocumentRegion modified = getModifiedRegionForReparation(region);
-//		System.out.println("Statement.repair() " + modified);
-//		if (!getPosition().isInside(modified)) {
-//			//TODO what if we increase the size and modify after offset?
-//			throw new IllegalArgumentException("Parameter repair regions are out of bounds: " + modified + " is outside of: " + getPosition());
-//		}
-//		//region is fully inside this one
-//		return parsinginfo.getRule().repairStatement(this, parsinginfo, region, context);
-//		StringBuilder sb = new StringBuilder();
-//		String rawval = this.getRawValue();
-//		int firstlen = region.getOffset() - thisoffset;
-//		sb.append(rawval.subSequence(0, firstlen));
-//		sb.append(region.getText());
-//		sb.append(rawval.subSequence(firstlen + region.getLength(), rawval.length()));
-//
-//		DocumentData data = new DocumentData(sb.toString());
 	}
 
 	public final ParsingResult repair(ParsingInformation parsinginfo, List<ReparationRegion> reparations)
@@ -385,19 +361,11 @@ public abstract class Statement implements Serializable, Cloneable {
 		return repair(parsinginfo, reparations, ParseContext.EMPTY);
 	}
 
-	private static StringBuilder builder = new StringBuilder();
-
-	private synchronized static String repeat(String s, int count) {
-		builder.setLength(0);
-		for (int i = 0; i < count; i++) {
-			builder.append(s);
-		}
-		return builder.toString();
-	}
-
 	private static void prettyprint(PrintStream out, Statement stm, int tabcount) {
 		for (Pair<String, Statement> scope : stm.getScopes()) {
-			out.print(repeat("|\t", tabcount));
+			for (int i = 0; i < tabcount; i++) {
+				out.print("|\t");
+			}
 			out.println(scope.key + ": \"" + scope.value.toValueSequence() + "\" - " + scope.value.getOffset() + " - "
 					+ scope.value.getEndOffset());
 			prettyprint(out, scope.value, tabcount + 1);
@@ -415,7 +383,9 @@ public abstract class Statement implements Serializable, Cloneable {
 
 	private static void prettyprintAll(PrintStream out, Statement stm, int tabcount) {
 		for (Statement child : stm.getDirectChildren()) {
-			out.print(repeat("|\t", tabcount));
+			for (int i = 0; i < tabcount; i++) {
+				out.print("|\t");
+			}
 			out.println(child.getName() + ": \"" + child.toValueSequence() + "\" - " + child.getOffset() + " - "
 					+ child.getEndOffset() + " - " + child.getClass().getSimpleName());
 			prettyprintAll(out, child, tabcount + 1);

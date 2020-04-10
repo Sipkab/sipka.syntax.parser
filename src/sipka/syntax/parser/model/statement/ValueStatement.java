@@ -20,16 +20,17 @@ import java.util.List;
 import java.util.Map;
 
 import sipka.syntax.parser.model.parse.document.DocumentRegion;
+import sipka.syntax.parser.util.ArrayRangeCharSequence;
 import sipka.syntax.parser.util.Pair;
 
 public class ValueStatement extends Statement {
 	private static final long serialVersionUID = -1399545866829166300L;
 
 	protected String name;
-	protected CharSequence value;
+	protected ArrayRangeCharSequence value;
 	protected Statement subStatement;
 
-	public ValueStatement(String name, CharSequence value, Statement substatement) {
+	public ValueStatement(String name, ArrayRangeCharSequence value, Statement substatement) {
 		super(new DocumentRegion(substatement.getPosition()));
 		this.name = name;
 		this.value = value;
@@ -87,12 +88,12 @@ public class ValueStatement extends Statement {
 	}
 
 	@Override
-	protected CharSequence toValueSequence() {
+	protected ArrayRangeCharSequence toValueSequence() {
 		return value;
 	}
 
 	@Override
-	protected CharSequence toRawSequence() {
+	protected ArrayRangeCharSequence toRawSequence() {
 		return subStatement.toRawSequence();
 	}
 

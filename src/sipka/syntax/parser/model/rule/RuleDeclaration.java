@@ -29,4 +29,36 @@ public final class RuleDeclaration {
 	public void setDeclarationContext(DeclaringContext declarationContext) {
 		this.declarationContext = declarationContext;
 	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((declarationContext == null) ? 0 : declarationContext.hashCode());
+		result = prime * result + ((rule == null) ? 0 : rule.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		RuleDeclaration other = (RuleDeclaration) obj;
+		if (declarationContext == null) {
+			if (other.declarationContext != null)
+				return false;
+		} else if (!declarationContext.equals(other.declarationContext))
+			return false;
+		if (rule == null) {
+			if (other.rule != null)
+				return false;
+		} else if (!rule.equals(other.rule))
+			return false;
+		return true;
+	}
+
 }

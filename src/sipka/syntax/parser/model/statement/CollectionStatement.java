@@ -27,6 +27,7 @@ import sipka.syntax.parser.model.parse.document.DocumentData;
 import sipka.syntax.parser.model.parse.document.DocumentRegion;
 import sipka.syntax.parser.model.rule.ParsingResult;
 import sipka.syntax.parser.model.statement.repair.ParsingInformation;
+import sipka.syntax.parser.util.ArrayRangeCharSequence;
 import sipka.syntax.parser.util.Pair;
 
 public class CollectionStatement extends Statement implements Iterable<Statement> {
@@ -75,9 +76,9 @@ public class CollectionStatement extends Statement implements Iterable<Statement
 	}
 
 	protected List<Statement> children;
-	private CharSequence rawValue;
+	private ArrayRangeCharSequence rawValue;
 
-	public CollectionStatement(CharSequence rawvalue, DocumentRegion position, List<Statement> children) {
+	public CollectionStatement(ArrayRangeCharSequence rawvalue, DocumentRegion position, List<Statement> children) {
 		super(position);
 		this.children = children;
 		this.rawValue = rawvalue;
@@ -168,12 +169,12 @@ public class CollectionStatement extends Statement implements Iterable<Statement
 	}
 
 	@Override
-	protected CharSequence toValueSequence() {
-		return "";
+	protected ArrayRangeCharSequence toValueSequence() {
+		return ArrayRangeCharSequence.EMPTY;
 	}
 
 	@Override
-	protected CharSequence toRawSequence() {
+	protected ArrayRangeCharSequence toRawSequence() {
 		return rawValue;
 	}
 

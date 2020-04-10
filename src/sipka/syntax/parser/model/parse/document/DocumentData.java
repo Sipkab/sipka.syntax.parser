@@ -15,15 +15,19 @@
  */
 package sipka.syntax.parser.model.parse.document;
 
-import sipka.syntax.parser.util.OffsetCharSequence;
+import sipka.syntax.parser.util.ArrayRangeCharSequence;
 
-public class DocumentData extends OffsetCharSequence {
-	public DocumentData(CharSequence data) {
-		super(data, 0, data.length());
+public class DocumentData extends ArrayRangeCharSequence {
+	public DocumentData(char[] data) {
+		super(data, 0, data.length);
+	}
+
+	public DocumentData(char[] subject, int index, int length) {
+		super(subject, index, length);
 	}
 
 	public DocumentData(DocumentData other) {
-		super(other.subject, other.index, other.length);
+		super(other.array, other.index, other.length);
 	}
 
 	public void removeFromStart(int count) {
@@ -35,8 +39,8 @@ public class DocumentData extends OffsetCharSequence {
 		this.length -= count;
 	}
 
-	public CharSequence subDocumentSequence(DocumentRegion region) {
-		return new OffsetCharSequence(subject, region.getOffset(), region.getLength());
+	public ArrayRangeCharSequence subDocumentSequence(DocumentRegion region) {
+		return new ArrayRangeCharSequence(array, region.getOffset(), region.getLength());
 	}
 
 	public final int getDocumentOffset() {

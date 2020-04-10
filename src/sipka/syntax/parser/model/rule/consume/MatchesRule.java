@@ -23,6 +23,7 @@ import sipka.syntax.parser.model.parse.params.InvokeParam;
 import sipka.syntax.parser.model.rule.container.value.ValueConsumer;
 import sipka.syntax.parser.model.statement.Statement;
 import sipka.syntax.parser.model.statement.repair.ParsingInformation;
+import sipka.syntax.parser.util.ArrayRangeCharSequence;
 
 public class MatchesRule extends ConsumeRule {
 	//TODO complete implementation of replacement
@@ -45,7 +46,7 @@ public class MatchesRule extends ConsumeRule {
 	}
 
 	@Override
-	protected void charactersConsumed(Matcher matcher, CharSequence parsed, ParseContext context) {
+	protected void charactersConsumed(Matcher matcher, ArrayRangeCharSequence parsed, ParseContext context) {
 		ValueConsumer targetValue = context.getCurrentValueConsumer();
 		if (targetValue != null) {
 			if (replacement == null) {
@@ -55,7 +56,7 @@ public class MatchesRule extends ConsumeRule {
 				StringBuffer sb = new StringBuffer();
 				matcher.appendReplacement(sb, replacement);
 				//TODO appendTail?
-				targetValue.appendValue(sb.toString());
+				targetValue.appendValue(sb);
 			}
 		}
 	}
@@ -65,7 +66,7 @@ public class MatchesRule extends ConsumeRule {
 			ParsingInformation parsinginfo) {
 		ValueConsumer targetValue = context.getCurrentValueConsumer();
 		if (targetValue != null) {
-			targetValue.appendValue(statement.getValue());
+			targetValue.appendValue(statement.getValueSequence());
 		}
 	}
 }

@@ -31,6 +31,7 @@ import sipka.syntax.parser.model.rule.Rule;
 import sipka.syntax.parser.model.statement.ConsumedStatement;
 import sipka.syntax.parser.model.statement.Statement;
 import sipka.syntax.parser.model.statement.repair.ParsingInformation;
+import sipka.syntax.parser.util.ArrayRangeCharSequence;
 
 public abstract class ConsumeRule extends Rule {
 	private final InvokeParam<Pattern> param;
@@ -69,16 +70,16 @@ public abstract class ConsumeRule extends Rule {
 	 * @param context
 	 *            The context of parsing.
 	 */
-	protected void charactersConsumed(Matcher matcher, CharSequence parsed, ParseContext context) {
+	protected void charactersConsumed(Matcher matcher, ArrayRangeCharSequence parsed, ParseContext context) {
 	}
 
-	private ParsingResult createStatement(CharSequence parsed, DocumentRegion position,
+	private ParsingResult createStatement(ArrayRangeCharSequence parsed, DocumentRegion position,
 			DocumentRegion regionofinterest) {
 		return new ParsingResult(new ConsumedStatement(parsed, position),
 				new ParsingInformation(this, regionofinterest));
 	}
 
-	private CharSequence tryParse(ParseHelper helper, DocumentData s, Pattern pattern, ParseContext context,
+	private ArrayRangeCharSequence tryParse(ParseHelper helper, DocumentData s, Pattern pattern, ParseContext context,
 			DocumentRegion outregionofinterest) {
 		AccessTrackingCharSequence trackingcs = new AccessTrackingCharSequence(s);
 		Matcher matcher = helper.getMatcher(pattern, trackingcs);
@@ -111,7 +112,7 @@ public abstract class ConsumeRule extends Rule {
 			//XXX throw an exception for debugging
 			throw new AssertionError();
 		}
-		CharSequence parsed = s.subSequence(start, end);
+		ArrayRangeCharSequence parsed = s.subSequence(start, end);
 		charactersConsumed(matcher, parsed, context);
 		return parsed;
 	}
@@ -123,7 +124,7 @@ public abstract class ConsumeRule extends Rule {
 
 		Pattern pattern = param.getValue(helper, context);
 		DocumentRegion regionofinterest = new DocumentRegion();
-		CharSequence parsed = tryParse(helper, s, pattern, context, regionofinterest);
+		ArrayRangeCharSequence parsed = tryParse(helper, s, pattern, context, regionofinterest);
 		if (parsed == null) {
 			return new ParsingResult(null, new ParsingInformation(this, regionofinterest));
 		}

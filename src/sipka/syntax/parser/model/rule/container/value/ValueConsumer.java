@@ -15,31 +15,78 @@
  */
 package sipka.syntax.parser.model.rule.container.value;
 
+import java.util.Arrays;
+
+import sipka.syntax.parser.util.ArrayRangeCharSequence;
+
 public class ValueConsumer {
-	private StringBuilder valueBuilder = new StringBuilder();
+	private static final char[] EMPTY_CHAR_ARRAY = new char[0];
+
+	private char[] array = EMPTY_CHAR_ARRAY;
+	private int count = 0;
+
+	public void appendValue(char[] chars, int index, int length) {
+		if (length == 0) {
+			return;
+		}
+		ensureCount(length);
+		System.arraycopy(chars, index, this.array, count, length);
+		count += length;
+	}
+
+	public void appendValue(ArrayRangeCharSequence parsed) {
+		appendValue(parsed.array(), parsed.index(), parsed.length());
+	}
 
 	public void appendValue(CharSequence parsed) {
-		valueBuilder.append(parsed);
+		if (parsed instanceof ArrayRangeCharSequence) {
+			appendValue((ArrayRangeCharSequence) parsed);
+		} else if (parsed instanceof String) {
+			appendValue((String) parsed);
+		} else {
+			int length = parsed.length();
+			if (length == 0) {
+				return;
+			}
+			ensureCount(length);
+			for (int i = 0; i < length; i++) {
+				this.array[this.count++] = parsed.charAt(i);
+			}
+		}
 	}
 
-	public void appendValue(String parsed) {
-		valueBuilder.append(parsed);
+	public void appendValue(String str) {
+		int length = str.length();
+		if (length == 0) {
+			return;
+		}
+		ensureCount(length);
+		str.getChars(0, length, array, count);
+		count += length;
 	}
 
-	protected CharSequence getParsedValue() {
-		return valueBuilder;
+	protected ArrayRangeCharSequence getParsedValue() {
+		return new ArrayRangeCharSequence(array, 0, count);
 	}
 
 	public int length() {
-		return valueBuilder.length();
+		return count;
 	}
 
 	public void setLength(int len) {
-		valueBuilder.setLength(len);
+		count = len;
 	}
 
 	@Override
 	public String toString() {
-		return "ValueConsumer [builder=" + valueBuilder + "]";
+		return getClass().getSimpleName() + "[" + String.copyValueOf(array, 0, count) + "]";
 	}
+
+	private void ensureCount(int length) {
+		if (count + length > array.length) {
+			int nlen = Math.max(Integer.highestOneBit(count + length) << 1, 16);
+			this.array = Arrays.copyOf(array, nlen);
+		}
+	}
+
 }

@@ -17,6 +17,8 @@ package sipka.syntax.parser.model.statement.repair;
 
 import java.util.Objects;
 
+import sipka.syntax.parser.util.ArrayRangeCharSequence;
+
 public class ReparationRegion {
 	private int offset;
 	private int length;
@@ -25,12 +27,12 @@ public class ReparationRegion {
 	public ReparationRegion(int offset, int length, CharSequence text) {
 		this.offset = offset;
 		this.length = length;
-		this.text = text;
+		this.text = text == null ? "" : text;
 	}
 
 	@Override
 	public String toString() {
-		return "ReparationRegion [" + offset + " (" + length + "): " + (text == null ? 0 : text.length()) + "]";
+		return "ReparationRegion [" + offset + " (" + length + "): " + text.length() + "]";
 	}
 
 	public int getOffset() {
@@ -47,6 +49,28 @@ public class ReparationRegion {
 
 	public void apply(StringBuilder chars, int charsoffset) {
 		chars.replace(offset - charsoffset, offset + length - charsoffset, Objects.toString(getText(), ""));
+	}
+
+	public void apply(char[] chars) {
+		int tlen = text.length();
+		int diff = tlen - length;
+		if (diff != 0) {
+			int endoffset = offset + length;
+			System.arraycopy(chars, endoffset, chars, endoffset + diff, chars.length - endoffset - Math.max(diff, 0));
+		}
+
+		if (tlen > 0) {
+			if (text instanceof String) {
+				((String) text).getChars(0, tlen, chars, offset);
+			} else if (text instanceof ArrayRangeCharSequence) {
+				ArrayRangeCharSequence arange = (ArrayRangeCharSequence) text;
+				System.arraycopy(arange.array(), arange.index(), chars, offset, tlen);
+			} else {
+				for (int i = 0; i < tlen; i++) {
+					chars[offset + i] = text.charAt(i);
+				}
+			}
+		}
 	}
 
 	public void apply(StringBuilder chars) {

@@ -737,7 +737,7 @@ public class Language extends InOrderRule {
 		return parseData(readStreamStringFully(is), System.err, progressmonitor);
 	}
 
-	public ParsingResult parseData(String data, PrintStream infostream, ParseProgressMonitor progressmonitor)
+	public ParsingResult parseData(char[] data, PrintStream infostream, ParseProgressMonitor progressmonitor)
 			throws ParseFailedException {
 		//TODO remove this infostream and move data to thrown exception
 		ParsingResult result;
@@ -753,61 +753,66 @@ public class Language extends InOrderRule {
 			throw e;
 		}
 		Statement resultstm = result.getStatement();
-		if (resultstm == null || resultstm.getEndOffset() != data.length()) {
-//			Set<ParseFail> fails = helper.getFails();
-//			String posstring = resultstm.getEndOffset() + "";
-//
-//			if (infostream != null) {
-//				infostream.println("Parsed: ");
-//				resultstm.prettyprint(infostream);
-//				infostream.println("Parse error info:");
-//			}
-			//TODO DIAGNOSTICS
-//			if (!fails.isEmpty()) {
-////				final int line = helper.getPosition().getLine();
-////				final int positionInLine = helper.getPosition().getPositionInLine();
-//				final int posfromstart = helper.getDocumentOffset();
-//
-//				posstring = posfromstart + "";//(line + 1) + ":" + (positionInLine + 1);
-//				if (infostream != null) {
-//					int nlineafter = data.indexOf('\n', posfromstart) - 1;
-//					if (nlineafter < 0) {
-//						nlineafter = data.length();
+		if (resultstm == null || resultstm.getEndOffset() != data.length) {
+//					Set<ParseFail> fails = helper.getFails();
+//					String posstring = resultstm.getEndOffset() + "";
+			//
+//					if (infostream != null) {
+//						infostream.println("Parsed: ");
+//						resultstm.prettyprint(infostream);
+//						infostream.println("Parse error info:");
 //					}
-//					infostream.println(
-//							"Expected at " + posstring + ": \"" + data.substring(posfromstart, nlineafter) + "\"");
-//					for (ParseFail fail : fails) {
-//						infostream.print("\t" + "Pattern: \"" + fail.getPattern() + "\"");
-//						if (fail.getIdentifier() != null) {
-//							infostream.print(" Identifier: \"" + fail.getIdentifier() + "\"");
-//						}
-//						infostream.println();
-//						for (ListIterator<Rule> it = fail.getStack().listIterator(fail.getStack().size()); it
-//								.hasPrevious();) {
-//							Rule st = it.previous();
-//							if (st.getIdentifierName() != null) {
-//								DocumentRegion stpos = st.getRuleDocumentPosition();
-//								if (stpos != null) {
-//									infostream.println("\t\t" + st.getIdentifierName() + " at: " + stpos// + (stpos.getLine() + 1) + ":" + (stpos.getPositionInLine() + 1)
-//									);
+			//TODO DIAGNOSTICS
+//					if (!fails.isEmpty()) {
+////						final int line = helper.getPosition().getLine();
+////						final int positionInLine = helper.getPosition().getPositionInLine();
+//						final int posfromstart = helper.getDocumentOffset();
+			//
+//						posstring = posfromstart + "";//(line + 1) + ":" + (positionInLine + 1);
+//						if (infostream != null) {
+//							int nlineafter = data.indexOf('\n', posfromstart) - 1;
+//							if (nlineafter < 0) {
+//								nlineafter = data.length();
+//							}
+//							infostream.println(
+//									"Expected at " + posstring + ": \"" + data.substring(posfromstart, nlineafter) + "\"");
+//							for (ParseFail fail : fails) {
+//								infostream.print("\t" + "Pattern: \"" + fail.getPattern() + "\"");
+//								if (fail.getIdentifier() != null) {
+//									infostream.print(" Identifier: \"" + fail.getIdentifier() + "\"");
+//								}
+//								infostream.println();
+//								for (ListIterator<Rule> it = fail.getStack().listIterator(fail.getStack().size()); it
+//										.hasPrevious();) {
+//									Rule st = it.previous();
+//									if (st.getIdentifierName() != null) {
+//										DocumentRegion stpos = st.getRuleDocumentPosition();
+//										if (stpos != null) {
+//											infostream.println("\t\t" + st.getIdentifierName() + " at: " + stpos// + (stpos.getLine() + 1) + ":" + (stpos.getPositionInLine() + 1)
+//											);
+//										}
+//									}
 //								}
 //							}
 //						}
+//					} else {
+//						posstring = resultstm.getPosition() + "";// (resultstm.getEndPos().getLine() + 1) + ":" + (resultstm.getEndPos().getPositionInLine() + 1);
+//						if (infostream != null) {
+//							infostream.println("No matching rule found for parsing remaining data");
+//						}
 //					}
-//				}
-//			} else {
-//				posstring = resultstm.getPosition() + "";// (resultstm.getEndPos().getLine() + 1) + ":" + (resultstm.getEndPos().getPositionInLine() + 1);
-//				if (infostream != null) {
-//					infostream.println("No matching rule found for parsing remaining data");
-//				}
-//			}
 			//TODO reify error message
 			throw new ParseFailedException("Failed to parse input.");
-//			throw new ParseFailedException("Failed to parse data, no rule to parse from line: " + posstring
-//					+ " Check output for more info. (Data length: " + data.length() + ", Parsed:"
-//					+ resultstm.getEndOffset() + ")");
+//					throw new ParseFailedException("Failed to parse data, no rule to parse from line: " + posstring
+//							+ " Check output for more info. (Data length: " + data.length() + ", Parsed:"
+//							+ resultstm.getEndOffset() + ")");
 		}
 		return result;
+	}
+
+	public ParsingResult parseData(String data, PrintStream infostream, ParseProgressMonitor progressmonitor)
+			throws ParseFailedException {
+		return parseData(data.toCharArray(), infostream, progressmonitor);
 	}
 
 	public ParsingResult parseData(String data, PrintStream infostream) throws ParseFailedException {
@@ -816,6 +821,10 @@ public class Language extends InOrderRule {
 
 	public ParsingResult parseData(String data) throws ParseFailedException {
 		return parseData(data, System.err);
+	}
+
+	public ParsingResult parseData(char[] data) throws ParseFailedException {
+		return parseData(data, System.err, ParseProgressMonitor.NULLMONITOR);
 	}
 
 	public ModifiableStatement parseManipulatedFile(File f) throws ParseFailedException, IOException {

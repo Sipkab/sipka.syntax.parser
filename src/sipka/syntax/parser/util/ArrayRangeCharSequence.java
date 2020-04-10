@@ -15,15 +15,49 @@
  */
 package sipka.syntax.parser.util;
 
-public class OffsetCharSequence implements CharSequence {
-	protected CharSequence subject;
+public class ArrayRangeCharSequence implements CharSequence {
+	public static final ArrayRangeCharSequence EMPTY = new ArrayRangeCharSequence(new char[0], 0, 0);
+
+	protected final char[] array;
 	protected int index;
 	protected int length;
 
-	public OffsetCharSequence(CharSequence subject, int index, int length) {
-		this.subject = subject;
+	public ArrayRangeCharSequence(char[] subject) {
+		this(subject, 0, subject.length);
+	}
+
+	public ArrayRangeCharSequence(char[] subject, int index, int length) {
+		this.array = subject;
 		this.index = index;
 		this.length = length;
+	}
+
+	public static ArrayRangeCharSequence valueOf(String str) {
+		return new ArrayRangeCharSequence(str.toCharArray());
+	}
+
+	public static ArrayRangeCharSequence valueOf(CharSequence str) {
+		if (str instanceof String) {
+			return valueOf((String) str);
+		}
+		char[] array = sequenceToArray(str);
+		return new ArrayRangeCharSequence(array);
+	}
+
+	public static char[] sequenceToArray(CharSequence str) {
+		char[] array = new char[str.length()];
+		for (int i = 0; i < array.length; i++) {
+			array[i] = str.charAt(i);
+		}
+		return array;
+	}
+
+	public char[] array() {
+		return array;
+	}
+
+	public int index() {
+		return index;
 	}
 
 	@Override
@@ -36,19 +70,19 @@ public class OffsetCharSequence implements CharSequence {
 		if (index < 0 || index >= length) {
 			throw new IndexOutOfBoundsException("Index out of bounds: " + index + " length: " + length);
 		}
-		return subject.charAt(this.index + index);
+		return array[this.index + index];
 	}
 
 	@Override
-	public CharSequence subSequence(int start, int end) {
+	public ArrayRangeCharSequence subSequence(int start, int end) {
 		if (start < 0 || end < 0 || end > length || start > length) {
 			throw new IndexOutOfBoundsException(start + " - " + end + " is not in range of 0 - " + length);
 		}
-		return new OffsetCharSequence(subject, this.index + start, end - start);
+		return new ArrayRangeCharSequence(array, this.index + start, end - start);
 	}
 
 	@Override
 	public String toString() {
-		return subject.subSequence(index, index + length).toString();
+		return String.valueOf(array, index, length);
 	}
 }

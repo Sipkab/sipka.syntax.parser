@@ -32,6 +32,7 @@ import sipka.syntax.parser.model.rule.container.order.InOrderRule;
 import sipka.syntax.parser.model.statement.Statement;
 import sipka.syntax.parser.model.statement.ValueStatement;
 import sipka.syntax.parser.model.statement.repair.ParsingInformation;
+import sipka.syntax.parser.util.ArrayRangeCharSequence;
 import sipka.syntax.parser.util.Pair;
 
 public class ValueRule extends InOrderRule {
@@ -83,7 +84,7 @@ public class ValueRule extends InOrderRule {
 
 		ParsingResult parsedchildrenresult = executor.apply(valuecontext);
 
-		CharSequence parsedval = valueconsumer.getParsedValue();
+		ArrayRangeCharSequence parsedval = valueconsumer.getParsedValue();
 		ValueParsingInformation usingparsinginfo = new ValueParsingInformation(this,
 				parsedchildrenresult.getParsingInformation());
 		if (!parsedchildrenresult.isSucceeded() || (nonEmpty && parsedval.length() == 0)) {
@@ -91,7 +92,7 @@ public class ValueRule extends InOrderRule {
 		}
 		Statement parsedchildrenstm = parsedchildrenresult.getStatement();
 
-		ValueStatement valuestm = new ValueStatement(getIdentifierName(), parsedval.toString(), parsedchildrenstm);
+		ValueStatement valuestm = new ValueStatement(getIdentifierName(), parsedval, parsedchildrenstm);
 		return new ParsingResult(valuestm, usingparsinginfo);
 	}
 
