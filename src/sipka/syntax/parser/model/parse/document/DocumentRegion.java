@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
-public class DocumentRegion implements Cloneable, Externalizable {
+public final class DocumentRegion implements Cloneable, Externalizable {
 	private static final long serialVersionUID = 1L;
 
 	protected int offset;
