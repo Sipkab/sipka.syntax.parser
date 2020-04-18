@@ -25,6 +25,12 @@ public class ReparationRegion {
 	private CharSequence text;
 
 	public ReparationRegion(int offset, int length, CharSequence text) {
+		if (offset < 0) {
+			throw new IndexOutOfBoundsException("offset < 0: " + offset);
+		}
+		if (length < 0) {
+			throw new IndexOutOfBoundsException("length < 0: " + length);
+		}
 		this.offset = offset;
 		this.length = length;
 		this.text = text == null ? "" : text;
@@ -51,12 +57,18 @@ public class ReparationRegion {
 		chars.replace(offset - charsoffset, offset + length - charsoffset, Objects.toString(getText(), ""));
 	}
 
-	public void apply(char[] chars) {
+	public void apply(char[] chars, int datalen) {
 		int tlen = text.length();
 		int diff = tlen - length;
 		if (diff != 0) {
 			int endoffset = offset + length;
-			System.arraycopy(chars, endoffset, chars, endoffset + diff, chars.length - endoffset - Math.max(diff, 0));
+			if (endoffset > datalen) {
+				throw new IndexOutOfBoundsException(
+						"Reparation end offset is out of range for data length: " + endoffset + " - " + datalen);
+			} else if (endoffset < datalen) {
+				//don't copy if there's nothing to copy
+				System.arraycopy(chars, endoffset, chars, endoffset + diff, datalen - endoffset);
+			}
 		}
 
 		if (tlen > 0) {

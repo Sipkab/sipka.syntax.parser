@@ -259,18 +259,18 @@ public abstract class Statement implements Serializable, Cloneable {
 		}
 	}
 
-	private static int getFinalLength(int original, Iterable<ReparationRegion> reparations, int[] outmaxdiff) {
-		int maxdiff = 0;
+	private static int getFinalLength(int original, Iterable<ReparationRegion> reparations, int[] outdiffsum) {
+		int diffsum = 0;
 		for (ReparationRegion rr : reparations) {
 			CharSequence text = rr.getText();
 			int tlen = text.length();
 			int diff = tlen - rr.getLength();
 			original = original + diff;
-			if (diff > maxdiff) {
-				maxdiff = diff;
+			if (diff > 0) {
+				diffsum += diff;
 			}
 		}
-		outmaxdiff[0] = maxdiff;
+		outdiffsum[0] = diffsum;
 		return original;
 	}
 
@@ -282,18 +282,20 @@ public abstract class Statement implements Serializable, Cloneable {
 
 		ArrayRangeCharSequence originalrawseq = toRawSequence();
 
-		int[] maxdiff = { 0 };
+		int[] diffsum = { 0 };
 		int originallength = originalrawseq.length();
-		int newlen = getFinalLength(originallength, reparations, maxdiff);
+		int newlen = getFinalLength(originallength, reparations, diffsum);
 		char[] nrawarray = Arrays.copyOfRange(originalrawseq.array(), originalrawseq.index(),
-				Math.max(originallength + maxdiff[0], newlen));
+				Math.max(originallength + diffsum[0], newlen));
+		int workinglen = originallength;
 
 		for (ReparationRegion r : reparations) {
 			int regionoffset = r.getOffset();
 			int deletelength = r.getLength();
 			CharSequence rtext = r.getText();
 			int insertlength = rtext == null ? 0 : rtext.length();
-			r.apply(nrawarray);
+			r.apply(nrawarray, workinglen);
+			workinglen += insertlength - deletelength;
 			if (deletelength > 0) {
 				for (Entry<Statement, ParsingInformation> entry : allinformation.entrySet()) {
 					Statement s = entry.getKey();
@@ -336,7 +338,8 @@ public abstract class Statement implements Serializable, Cloneable {
 			DocumentData ndocdata = new DocumentData(nrawarray, 0, newlen);
 			ParsingResult repaired = parsinginfo.getRule().repairStatement(new ParseHelper(), this, parsinginfo,
 					ndocdata, context, contentmodifiedstatements::contains, Language.PARSE_ONCE());
-			if (repaired.getStatement().getEndOffset() != newlen) {
+			if (repaired == null || repaired.getStatement() == null
+					|| repaired.getStatement().getEndOffset() != newlen) {
 				//TODO diagnostics
 				throw new ParseFailedException("Failed to parse whole input.");
 			}

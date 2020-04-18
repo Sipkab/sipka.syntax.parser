@@ -1,0 +1,5 @@
+language test {
+	value v 1 {
+		matches "[0-9]+" *;
+	}
+}
