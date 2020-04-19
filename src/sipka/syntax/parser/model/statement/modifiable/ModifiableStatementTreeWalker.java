@@ -13,16 +13,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package sipka.syntax.parser.model.manipulate;
+package sipka.syntax.parser.model.statement.modifiable;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Iterator;
-import java.util.Stack;
 
 public class ModifiableStatementTreeWalker implements Iterator<ModifiableStatement> {
 	private final ModifiableStatement root;
 
 	private ModifiableStatement next;
-	private Stack<Iterator<ModifiableStatement>> childrenStack = new Stack<>();
+	private Deque<Iterator<ModifiableStatement>> childrenStack = new ArrayDeque<>();
 
 	public ModifiableStatementTreeWalker(ModifiableStatement root) {
 		this.root = root;
@@ -39,10 +40,10 @@ public class ModifiableStatementTreeWalker implements Iterator<ModifiableStateme
 		final ModifiableStatement result = next;
 		// get next
 
-		while (!childrenStack.empty() && !childrenStack.peek().hasNext()) {
+		while (!childrenStack.isEmpty() && !childrenStack.peek().hasNext()) {
 			childrenStack.pop();
 		}
-		if (childrenStack.empty()) {
+		if (childrenStack.isEmpty()) {
 			next = null;
 		} else {
 			next = childrenStack.peek().next();

@@ -38,24 +38,10 @@ public abstract class Rule {
 	private final String identifierName;
 	private List<Pair<String, Class<?>>> params;
 	private final int ruleId;
-	private DocumentRegion ruleDocumentPosition;
 
 	public Rule(String identifierName) {
-		this(identifierName, null);
-	}
-
-	public Rule(String identifierName, DocumentRegion ruledocposition) {
 		this.identifierName = identifierName;
 		this.ruleId = ruleCounter.getAndIncrement();
-		this.ruleDocumentPosition = ruledocposition;
-	}
-
-	public DocumentRegion getRuleDocumentPosition() {
-		return ruleDocumentPosition;
-	}
-
-	/* package */ void setRuleDocumentPosition(DocumentRegion ruleDocumentPosition) {
-		this.ruleDocumentPosition = ruleDocumentPosition;
 	}
 
 	protected abstract ParsingResult parseStatementImpl(ParseHelper helper, DocumentData s, ParseContext context,

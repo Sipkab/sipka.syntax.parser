@@ -20,14 +20,15 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TreeMap;
@@ -36,8 +37,6 @@ import java.util.regex.PatternSyntaxException;
 
 import sipka.syntax.parser.model.FatalParseException;
 import sipka.syntax.parser.model.ParseFailedException;
-import sipka.syntax.parser.model.manipulate.Manipulator;
-import sipka.syntax.parser.model.manipulate.ModifiableStatement;
 import sipka.syntax.parser.model.occurrence.Occurrence;
 import sipka.syntax.parser.model.parse.ParseTimeData;
 import sipka.syntax.parser.model.parse.context.DeclaringContext;
@@ -59,7 +58,7 @@ import sipka.syntax.parser.model.rule.invoke.InvokeRule;
 import sipka.syntax.parser.model.statement.Statement;
 import sipka.syntax.parser.util.Pair;
 
-public class Language extends InOrderRule {
+public class Language {
 	public static interface ParseProgressMonitor {
 		public static final ParseProgressMonitor NULLMONITOR = () -> false;
 
@@ -92,9 +91,6 @@ public class Language extends InOrderRule {
 	}
 
 	static {
-
-		DESCRIBER_LANGUAGE = new Language("descriptor_language");
-
 		final ConsumeRule regexmatch = new MatchesRule(compileLanguagePattern("\"((\\\\\")|(\\\\\\\\)|[^\"])*\""));
 		final ConsumeRule bracketopen = new SkipRule(compileLanguagePattern("\\{"));
 		final ConsumeRule bracketclose = new SkipRule(compileLanguagePattern("\\}"));
@@ -272,28 +268,7 @@ public class Language extends InOrderRule {
 				.addChild(languagenode, PARSE_ANY())//
 		;
 
-		DESCRIBER_LANGUAGE.addChild(langcontentnode, PARSE_ANY());
-
-		// try {
-		// Language manilang = fromFile(new File("manipulatelang.sd")).get("manipulate");
-		//
-		// final ContainerRule manipulatenode = new ValueRule("manipulate_node");
-		//
-		// final ContainerRule manipulatenodebody = new ValueRule("body")//
-		// .addChild(new Pair<>(bracketopen, PARSE_ONCE()))//
-		// .addChild(new Pair<>(manilang, PARSE_ONCE()))//
-		// .addChild(new Pair<>(bracketclose, PARSE_ONCE()));
-		//
-		// manipulatenode.addChild(new SkipRule("manipulate"), PARSE_ONCE());
-		// manipulatenode.addChild(new Pair<>(WHITESPACE, PARSE_MIN_ONCE()));
-		// manipulatenode.addChild(new ValueRule("name", declarednamematch, PARSE_ONCE()), PARSE_ONCE());
-		// manipulatenode.addChild(new Pair<>(WHITESPACE, PARSE_ANY()));
-		// manipulatenode.addChild(manipulatenodebody, PARSE_ONCE());
-		//
-		// langcontentnode.addChild(manipulatenode, PARSE_ANY());
-		// } catch (IOException | ParseFailedException e) {
-		// e.printStackTrace();
-		// }
+		DESCRIBER_LANGUAGE = new Language("descriptor_language", langcontentnode);
 	}
 
 	private static Pattern compileLanguagePattern(String pattern) {
@@ -483,19 +458,17 @@ public class Language extends InOrderRule {
 				switch (scopepair.key) {
 					case "language_node": {
 						final String name = scoped.firstScope("name").getValue();
-						Language lang = new Language(name);
 
-						parseRulesImpl(langmap, lang, scoped.firstScope("body"), parseStack, undefinedrules);
-						String langid = lang.getIdentifierName();
+						InOrderRule langrule = new InOrderRule();
+						parseRulesImpl(langmap, langrule, scoped.firstScope("body"), parseStack, undefinedrules);
+						String langid = name;
+						Language lang = new Language(name, langrule);
 						Language prev = langmap.put(langid, lang);
 						if (prev != null) {
 							throw new IllegalArgumentException("Duplicate language definitions: " + langid);
 						}
 
-						{
-							Rule rr = lang;
-							rr.setRuleDocumentPosition(scoped.getPosition());
-						}
+						lang.rule = langrule;
 						break;
 					}
 					case "invoke_node": {
@@ -512,8 +485,6 @@ public class Language extends InOrderRule {
 							invokeparams = Collections.emptyList();
 						}
 						final Rule rule = new InvokeRule(new VarReferenceParam<>(invokename), alias, invokeparams);
-
-						rule.setRuleDocumentPosition(scoped.getPosition());
 
 						container.addChild(rule, new ParseTimeData(occurrence, new DeclaringContext(parseStack)));
 						break;
@@ -578,10 +549,6 @@ public class Language extends InOrderRule {
 							throw new ParseFailedException("Container rule must have name or occurrence");
 						}
 
-						{
-							Rule rr = rule;
-							rr.setRuleDocumentPosition(scoped.getPosition());
-						}
 						parseRulesImpl(langmap, rule, scoped.firstScope("body"), parseStack, undefinedrules);
 						break;
 					}
@@ -591,8 +558,6 @@ public class Language extends InOrderRule {
 						final InvokeParam<Pattern> param = parseRegex(scoped);
 						final String alias = scoped.firstValue("alias_name");
 						final Rule rule = instantiateConsumeRule(type, param, alias);
-
-						rule.setRuleDocumentPosition(scoped.getPosition());
 
 						container.addChild(rule, new ParseTimeData(occurrence, new DeclaringContext(parseStack)));
 						break;
@@ -642,25 +607,6 @@ public class Language extends InOrderRule {
 		}
 	}
 
-	@SuppressWarnings("unused")
-	private static void parseManipulators(Map<String, Manipulator> result, Manipulator manipulator, Statement stm) {
-		for (Pair<String, Statement> scopepair : stm.getScopes()) {
-			Statement scoped = scopepair.value;
-			switch (scopepair.key) {
-				case "manipulate_node": {
-					final String name = scoped.firstScope("name").getValue();
-					Manipulator mani = new Manipulator(name);
-					parseManipulators(result, mani, scoped);
-					result.put(mani.getName(), mani);
-					break;
-				}
-				default: {
-					break;
-				}
-			}
-		}
-	}
-
 	private static ArrayDeque<Pair<String, Object>> addDefaultRulesToStack(ArrayDeque<Pair<String, Object>> stack) {
 		stack.push(new Pair<>("whitespace", WHITESPACE_PATTERN));
 		return stack;
@@ -668,10 +614,6 @@ public class Language extends InOrderRule {
 
 	private static ArrayDeque<Pair<String, Object>> ruleStackWithDefaultRules() {
 		return addDefaultRulesToStack(new ArrayDeque<>());
-	}
-
-	public static Map<String, Language> fromFile(File f) throws IOException, ParseFailedException {
-		return fromString(new String(Files.readAllBytes(f.toPath())));
 	}
 
 	private static String readStreamStringFully(InputStream is) throws IOException {
@@ -682,8 +624,16 @@ public class Language extends InOrderRule {
 				os.write(buffer, 0, len);
 			}
 
-			return os.toString();
+			return os.toString("UTF-8");
 		}
+	}
+
+	public static Map<String, Language> fromFile(File f) throws IOException, ParseFailedException {
+		return fromPath(f.toPath());
+	}
+
+	public static Map<String, Language> fromPath(Path p) throws IOException, ParseFailedException {
+		return fromString(new String(Files.readAllBytes(p), StandardCharsets.UTF_8));
 	}
 
 	public static Map<String, Language> fromInputStream(InputStream is) throws IOException, ParseFailedException {
@@ -698,29 +648,19 @@ public class Language extends InOrderRule {
 			throw new ParseFailedException("Failed to parse whole file");
 		}
 
-		// Main.prettyprint(result, 0);
-		// System.out.println();
-
-		Map<String, Manipulator> manimap = new TreeMap<>();
 		Map<String, Language> langmap = new TreeMap<>();
 
 		parseRules(resultstm, langmap);
-		parseManipulators(manimap, null, resultstm);
-
-		for (Entry<String, Manipulator> entry : manimap.entrySet()) {
-			Language lang = langmap.get(entry.getKey());
-			if (lang != null) {
-				lang.manipulator = entry.getValue();
-			}
-		}
 
 		return langmap;
 	}
 
-	private Manipulator manipulator;
+	private transient String name;
+	private ContainerRule rule;
 
-	private Language(String identifierName) {
-		super(identifierName);
+	public Language(String name, ContainerRule rule) {
+		this.name = name;
+		this.rule = rule;
 	}
 
 	public ParsingResult parseFile(File f) throws ParseFailedException, IOException {
@@ -748,7 +688,7 @@ public class Language extends InOrderRule {
 			if (progressmonitor != null) {
 				helper.setProgressMonitor(progressmonitor);
 			}
-			result = parseStatement(helper, docdata, ParseContext.EMPTY, PARSE_ONCE());
+			result = rule.parseStatement(helper, docdata, ParseContext.EMPTY, PARSE_ONCE());
 		} catch (FatalParseException e) {
 			throw e;
 		}
@@ -827,19 +767,18 @@ public class Language extends InOrderRule {
 		return parseData(data, System.err, ParseProgressMonitor.NULLMONITOR);
 	}
 
-	public ModifiableStatement parseManipulatedFile(File f) throws ParseFailedException, IOException {
-		ParsingResult parsed = parseFile(f);
-		ModifiableStatement res = ModifiableStatement.parse(parsed.getStatement());
-		if (manipulator != null) {
-			manipulator.manipulate(res);
-		}
-		return res;
+	@Override
+	public int hashCode() {
+		return rule.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return this == obj;
 	}
 
 	@Override
 	public String toString() {
-		return "Language [" + (manipulator != null ? "manipulator=" + manipulator + ", " : "")
-				+ (getIdentifierName() != null ? "getIdentifierName()=" + getIdentifierName() : "") + "]";
+		return getClass().getSimpleName() + "[" + name + "]";
 	}
-
 }
