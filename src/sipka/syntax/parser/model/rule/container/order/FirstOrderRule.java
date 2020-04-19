@@ -63,10 +63,6 @@ public class FirstOrderRule extends ContainerRule {
 		super(identifierName);
 	}
 
-	public FirstOrderRule() {
-		super();
-	}
-
 	@Override
 	protected ParsingResult parseChildren(ParseHelper helper, DocumentData s, ParseContext context,
 			ParseTimeData parsedata) {

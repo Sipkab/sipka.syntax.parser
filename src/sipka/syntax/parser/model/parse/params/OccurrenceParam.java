@@ -25,6 +25,7 @@ import sipka.syntax.parser.model.rule.ParseHelper;
 public class OccurrenceParam implements InvokeParam<Occurrence> {
 	private final Occurrence occurrence;
 
+	@Deprecated
 	public OccurrenceParam(String occurrenceString) throws ParseFailedException {
 		this.occurrence = Occurrence.parse(occurrenceString);
 	}

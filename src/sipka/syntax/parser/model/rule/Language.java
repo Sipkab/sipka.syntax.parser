@@ -54,7 +54,6 @@ import sipka.syntax.parser.model.rule.container.order.AnyOrderRule;
 import sipka.syntax.parser.model.rule.container.order.FirstOrderRule;
 import sipka.syntax.parser.model.rule.container.order.InOrderRule;
 import sipka.syntax.parser.model.rule.container.value.ValueRule;
-import sipka.syntax.parser.model.rule.invoke.InvokeRule;
 import sipka.syntax.parser.model.statement.Statement;
 import sipka.syntax.parser.util.Pair;
 
@@ -64,9 +63,6 @@ public class Language {
 
 		public boolean isCancelled();
 	}
-
-	private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\A([ \\t\\r\\n\\v\\f]+)");
-	public static final SkipRule WHITESPACE = new SkipRule(WHITESPACE_PATTERN);
 
 	public static final Language DESCRIBER_LANGUAGE;
 
@@ -91,159 +87,166 @@ public class Language {
 	}
 
 	static {
-		final ConsumeRule regexmatch = new MatchesRule(compileLanguagePattern("\"((\\\\\")|(\\\\\\\\)|[^\"])*\""));
-		final ConsumeRule bracketopen = new SkipRule(compileLanguagePattern("\\{"));
-		final ConsumeRule bracketclose = new SkipRule(compileLanguagePattern("\\}"));
-		final ConsumeRule occurrencematch = new MatchesRule(compileLanguagePattern(
+		RuleFactory factory = new RuleFactory();
+		final Pattern WHITESPACE_PATTERN = factory.pattern("[ \\t\\r\\n\\v\\f]+");
+		final SkipRule WHITESPACE = factory.createSkipRule(WHITESPACE_PATTERN);
+
+		final ConsumeRule regexmatch = factory.createMatchesRule(factory.pattern("\"((\\\\\")|(\\\\\\\\)|[^\"])*\""));
+		final ConsumeRule bracketopen = factory.createSkipRule(factory.pattern("\\{"));
+		final ConsumeRule bracketclose = factory.createSkipRule(factory.pattern("\\}"));
+		final ConsumeRule occurrencematch = factory.createMatchesRule(factory.pattern(
 				"(([0-9]+[+-]?)|\\*|\\?|\\+)+([ \\t\\r\\n\\v\\f]*\\|[ \\t\\r\\n\\v\\f]*(([0-9]+[+-]?)|\\*|\\?|\\+))*"));
-		final ConsumeRule declarednamematch = new MatchesRule(compileLanguagePattern("[a-zA-Z_][a-zA-Z0-9_]*"));
-		final ConsumeRule semicolonskip = new SkipRule(compileLanguagePattern(";"));
+		final ConsumeRule declarednamematch = factory.createMatchesRule(factory.pattern("[a-zA-Z_][a-zA-Z0-9_]*"));
+		final ConsumeRule semicolonskip = factory.createSkipRule(factory.pattern(";"));
 
-		final ContainerRule languagenode = new ValueRule("language_node");
-		final ContainerRule consumenode = new ValueRule("consume_node");
-		final ContainerRule containernode = new ValueRule("container_node");
-		final ContainerRule declarenode = new ValueRule("declare_node");
-		final ContainerRule invokenode = new ValueRule("invoke_node");
-		final ContainerRule forwarddeclarenode = new ValueRule("forwarddeclare_container_node");
+		final ContainerRule languagenode = factory.createValueRule("language_node");
+		final ContainerRule consumenode = factory.createValueRule("consume_node");
+		final ContainerRule containernode = factory.createValueRule("container_node");
+		final ContainerRule declarenode = factory.createValueRule("declare_node");
+		final ContainerRule invokenode = factory.createValueRule("invoke_node");
+		final ContainerRule forwarddeclarenode = factory.createValueRule("forwarddeclare_container_node");
 
-		final ContainerRule generaldeclarations = new AnyOrderRule();
+		final ContainerRule generaldeclarations = factory.createAnyOrderRule();
 
-		final ContainerRule ordernodebody = new ValueRule("body")//
+		final ContainerRule ordernodebody = factory.createValueRule("body")//
 				.addChild(new Pair<>(bracketopen, PARSE_ONCE()))//
 				.addChild(new Pair<>(generaldeclarations, PARSE_ONCE()))//
 				.addChild(new Pair<>(bracketclose, PARSE_ONCE()));
-		final ContainerRule occurrencevalue = new FirstOrderRule()//
-				.addChild(new ValueRule("occurrence", occurrencematch, PARSE_ONCE()), PARSE_ONCE())//
-				.addChild(new ValueRule("occurrence_ref", declarednamematch, PARSE_ONCE()), PARSE_ONCE());
+		final ContainerRule occurrencevalue = factory.createFirstOrderRule()//
+				.addChild(factory.createValueRule("occurrence", occurrencematch, PARSE_ONCE()), PARSE_ONCE())//
+				.addChild(factory.createValueRule("occurrence_ref", declarednamematch, PARSE_ONCE()), PARSE_ONCE());
 
-		declarenode.addChild(
-				new ValueRule("type", new MatchesRule(compileLanguagePattern("regex|occurrence")), PARSE_ONCE()),
-				PARSE_ONCE());
+		declarenode.addChild(factory.createValueRule("type",
+				factory.createMatchesRule(factory.pattern("regex|occurrence")), PARSE_ONCE()), PARSE_ONCE());
 		declarenode.addChild(WHITESPACE, PARSE_MIN_ONCE());
-		declarenode.addChild(new ValueRule("name", declarednamematch, PARSE_ONCE()), PARSE_ONCE());
+		declarenode.addChild(factory.createValueRule("name", declarednamematch, PARSE_ONCE()), PARSE_ONCE());
 		declarenode.addChild(WHITESPACE, PARSE_MIN_ONCE());
-		declarenode.addChild(new FirstOrderRule()//
-				.addChild(new ValueRule("expression", regexmatch, PARSE_ONCE()), PARSE_ONCE())//
-				.addChild(new ValueRule("expression", occurrencematch, PARSE_ONCE()), PARSE_ONCE())//
+		declarenode.addChild(factory.createFirstOrderRule()//
+				.addChild(factory.createValueRule("expression", regexmatch, PARSE_ONCE()), PARSE_ONCE())//
+				.addChild(factory.createValueRule("expression", occurrencematch, PARSE_ONCE()), PARSE_ONCE())//
 				, PARSE_ONCE());
 		declarenode.addChild(WHITESPACE, PARSE_ANY());
 		declarenode.addChild(semicolonskip, PARSE_ONCE());
 
-		forwarddeclarenode.addChild(new ValueRule("type",
-				new MatchesRule(compileLanguagePattern("value|inorder|anyorder|firstorder")), PARSE_ONCE()),
+		forwarddeclarenode.addChild(
+				factory.createValueRule("type",
+						factory.createMatchesRule(factory.pattern("value|inorder|anyorder|firstorder")), PARSE_ONCE()),
 				PARSE_ONCE());
 		forwarddeclarenode.addChild(WHITESPACE, PARSE_MIN_ONCE());
-		forwarddeclarenode.addChild(new ValueRule("name", declarednamematch, PARSE_ONCE()), PARSE_ONCE());
+		forwarddeclarenode.addChild(factory.createValueRule("name", declarednamematch, PARSE_ONCE()), PARSE_ONCE());
 		forwarddeclarenode.addChild(WHITESPACE, PARSE_ANY());
 		forwarddeclarenode.addChild(semicolonskip, PARSE_ONCE());
 
-		consumenode.addChild(
-				new ValueRule("type", new MatchesRule(compileLanguagePattern("matches|skip")), PARSE_ONCE()),
-				PARSE_ONCE());
+		consumenode.addChild(factory.createValueRule("type", factory.createMatchesRule(factory.pattern("matches|skip")),
+				PARSE_ONCE()), PARSE_ONCE());
 		consumenode.addChild(new Pair<>(WHITESPACE, PARSE_MIN_ONCE()));
-		consumenode.addChild(new ValueRule("alias_name")//
-				.addChild(new SkipRule(compileLanguagePattern("as")), PARSE_ONCE())//
+		consumenode.addChild(factory.createValueRule("alias_name")//
+				.addChild(factory.createSkipRule(factory.pattern("as")), PARSE_ONCE())//
 				.addChild(new Pair<>(WHITESPACE, PARSE_MIN_ONCE()))//
 				.addChild(declarednamematch, PARSE_ONCE())//
 				.addChild(new Pair<>(WHITESPACE, PARSE_MIN_ONCE()))//
 				, PARSE_OPTIONAL());
-		consumenode.addChild(new FirstOrderRule()//
-				.addChild(new ValueRule("regex", regexmatch, PARSE_ONCE()), PARSE_ONCE())//
-				.addChild(new ValueRule("regex_ref", declarednamematch, PARSE_ONCE()), PARSE_ONCE())//
+		consumenode.addChild(factory.createFirstOrderRule()//
+				.addChild(factory.createValueRule("regex", regexmatch, PARSE_ONCE()), PARSE_ONCE())//
+				.addChild(factory.createValueRule("regex_ref", declarednamematch, PARSE_ONCE()), PARSE_ONCE())//
 				, PARSE_ONCE());
 		consumenode.addChild(new Pair<>(WHITESPACE, PARSE_MIN_ONCE()));
 		consumenode.addChild(occurrencevalue, PARSE_ONCE());
 		consumenode.addChild(new Pair<>(WHITESPACE, PARSE_ANY()));
 		consumenode.addChild(semicolonskip, PARSE_ONCE());
 
-		ContainerRule singlecallingparameter = new ValueRule("call_param")//
-				.addChild(new ValueRule("type", new MatchesRule(compileLanguagePattern("regex|occurrence|rule")),
-						PARSE_ONCE()), PARSE_ONCE())//
+		ContainerRule singlecallingparameter = factory.createValueRule("call_param")//
+				.addChild(
+						factory.createValueRule("type",
+								factory.createMatchesRule(factory.pattern("regex|occurrence|rule")), PARSE_ONCE()),
+						PARSE_ONCE())//
 				.addChild(new Pair<>(WHITESPACE, PARSE_MIN_ONCE()))//
-				.addChild(new ValueRule("name", declarednamematch, PARSE_ONCE()), PARSE_ONCE());
-		ContainerRule calingparams = new InOrderRule()//
-				.addChild(new SkipRule(compileLanguagePattern("\\(")), PARSE_ONCE())//
+				.addChild(factory.createValueRule("name", declarednamematch, PARSE_ONCE()), PARSE_ONCE());
+		ContainerRule calingparams = factory.createInOrderRule()//
+				.addChild(factory.createSkipRule(factory.pattern("\\(")), PARSE_ONCE())//
 				.addChild(new Pair<>(WHITESPACE, PARSE_ANY()))//
-				.addChild(new InOrderRule()//
+				.addChild(factory.createInOrderRule()//
 						.addChild(singlecallingparameter, PARSE_ONCE())//
-						.addChild(new InOrderRule()//
+						.addChild(factory.createInOrderRule()//
 								.addChild(new Pair<>(WHITESPACE, PARSE_ANY()))//
-								.addChild(new SkipRule(compileLanguagePattern(",")), PARSE_ONCE())//
+								.addChild(factory.createSkipRule(factory.pattern(",")), PARSE_ONCE())//
 								.addChild(new Pair<>(WHITESPACE, PARSE_ANY()))//
 								.addChild(singlecallingparameter, PARSE_ONCE())//
 								, PARSE_ANY())//
 						, PARSE_OPTIONAL())//
 				.addChild(new Pair<>(WHITESPACE, PARSE_ANY()))//
-				.addChild(new SkipRule(compileLanguagePattern("\\)")), PARSE_ONCE());
+				.addChild(factory.createSkipRule(factory.pattern("\\)")), PARSE_ONCE());
 
-		ContainerRule containeroccurspec = new InOrderRule()//
+		ContainerRule containeroccurspec = factory.createInOrderRule()//
 				.addChild(new Pair<>(WHITESPACE, PARSE_MIN_ONCE()))//
 				.addChild(occurrencevalue, PARSE_ONCE());
-		ContainerRule containerparamdefspec = new InOrderRule()//
+		ContainerRule containerparamdefspec = factory.createInOrderRule()//
 				.addChild(new Pair<>(WHITESPACE, PARSE_ANY()))//
 				.addChild(calingparams, PARSE_OPTIONAL());
 
-		containernode.addChild(new FirstOrderRule()//
-				.addChild(new InOrderRule()//
-						.addChild(new InOrderRule()//
-								.addChild(new ValueRule("nonempty",
-										new MatchesRule(compileLanguagePattern("non-empty")), PARSE_ONCE()),
+		containernode.addChild(factory.createFirstOrderRule()//
+				.addChild(factory.createInOrderRule()//
+						.addChild(factory.createInOrderRule()//
+								.addChild(
+										factory.createValueRule("nonempty",
+												factory.createMatchesRule(factory.pattern("non-empty")), PARSE_ONCE()),
 										PARSE_ONCE())//
 								.addChild(WHITESPACE, PARSE_MIN_ONCE())//
 								, PARSE_OPTIONAL())//
-						.addChild(new ValueRule("type", new MatchesRule(compileLanguagePattern("value")), PARSE_ONCE()),
-								PARSE_ONCE())//
+						.addChild(factory.createValueRule("type", factory.createMatchesRule(factory.pattern("value")),
+								PARSE_ONCE()), PARSE_ONCE())//
 						.addChild(WHITESPACE, PARSE_MIN_ONCE())//
-						.addChild(new ValueRule("name", declarednamematch, PARSE_ONCE()), PARSE_ONCE())//
+						.addChild(factory.createValueRule("name", declarednamematch, PARSE_ONCE()), PARSE_ONCE())//
 						, PARSE_ONCE())//
-				.addChild(new InOrderRule()//
-						.addChild(new ValueRule("type",
-								new MatchesRule(compileLanguagePattern("inorder|anyorder|firstorder")), PARSE_ONCE()),
-								PARSE_ONCE())//
-						.addChild(new InOrderRule()//
+				.addChild(factory.createInOrderRule()//
+						.addChild(factory.createValueRule("type",
+								factory.createMatchesRule(factory.pattern("inorder|anyorder|firstorder")),
+								PARSE_ONCE()), PARSE_ONCE())//
+						.addChild(factory.createInOrderRule()//
 								.addChild(WHITESPACE, PARSE_MIN_ONCE())//
-								.addChild(new ValueRule("name", declarednamematch, PARSE_ONCE()), PARSE_ONCE())//
+								.addChild(factory.createValueRule("name", declarednamematch, PARSE_ONCE()),
+										PARSE_ONCE())//
 								, PARSE_OPTIONAL())//
 						, PARSE_ONCE())//
 				, PARSE_ONCE());
-		containernode.addChild(new FirstOrderRule()//
+		containernode.addChild(factory.createFirstOrderRule()//
 				.addChild(containeroccurspec, PARSE_ONCE())//
 				.addChild(containerparamdefspec, PARSE_ONCE())//
 				, PARSE_OPTIONAL());
 		containernode.addChild(new Pair<>(WHITESPACE, PARSE_ANY()));
 		containernode.addChild(ordernodebody, PARSE_ONCE());
 
-		final ContainerRule singleinvokeparam = new FirstOrderRule()//
-				.addChild(new ValueRule("param_ref", declarednamematch, PARSE_ONCE()), PARSE_ONCE())//
-				.addChild(new ValueRule("param_occurrence", occurrencematch, PARSE_ONCE()), PARSE_ONCE())//
-				.addChild(new ValueRule("param_regex", regexmatch, PARSE_ONCE()), PARSE_ONCE());//
+		final ContainerRule singleinvokeparam = factory.createFirstOrderRule()//
+				.addChild(factory.createValueRule("param_ref", declarednamematch, PARSE_ONCE()), PARSE_ONCE())//
+				.addChild(factory.createValueRule("param_occurrence", occurrencematch, PARSE_ONCE()), PARSE_ONCE())//
+				.addChild(factory.createValueRule("param_regex", regexmatch, PARSE_ONCE()), PARSE_ONCE());//
 
-		invokenode.addChild(new InOrderRule()//
-				.addChild(new SkipRule(compileLanguagePattern("include")), PARSE_ONCE())//
+		invokenode.addChild(factory.createInOrderRule()//
+				.addChild(factory.createSkipRule(factory.pattern("include")), PARSE_ONCE())//
 				.addChild(new Pair<>(WHITESPACE, PARSE_MIN_ONCE()))//
-				.addChild(new ValueRule("name", declarednamematch, PARSE_ONCE()), PARSE_ONCE())//
-				.addChild(new InOrderRule()//
+				.addChild(factory.createValueRule("name", declarednamematch, PARSE_ONCE()), PARSE_ONCE())//
+				.addChild(factory.createInOrderRule()//
 						.addChild(WHITESPACE, PARSE_MIN_ONCE())//
-						.addChild(new SkipRule(compileLanguagePattern("as")), PARSE_ONCE())//
+						.addChild(factory.createSkipRule(factory.pattern("as")), PARSE_ONCE())//
 						.addChild(WHITESPACE, PARSE_MIN_ONCE())//
-						.addChild(new ValueRule("alias_name", declarednamematch, PARSE_ONCE()), PARSE_ONCE())//
+						.addChild(factory.createValueRule("alias_name", declarednamematch, PARSE_ONCE()), PARSE_ONCE())//
 						, PARSE_OPTIONAL())//
 				, PARSE_ONCE());
-		invokenode.addChild(new InOrderRule()//
+		invokenode.addChild(factory.createInOrderRule()//
 				.addChild(new Pair<>(WHITESPACE, PARSE_ANY()))//
-				.addChild(new SkipRule(compileLanguagePattern("\\(")), PARSE_ONCE())//
+				.addChild(factory.createSkipRule(factory.pattern("\\(")), PARSE_ONCE())//
 				.addChild(new Pair<>(WHITESPACE, PARSE_ANY()))//
-				.addChild(new ValueRule("params")//
+				.addChild(factory.createValueRule("params")//
 						.addChild(singleinvokeparam, PARSE_ONCE())//
-						.addChild(new InOrderRule()//
+						.addChild(factory.createInOrderRule()//
 								.addChild(new Pair<>(WHITESPACE, PARSE_ANY()))//
-								.addChild(new SkipRule(compileLanguagePattern(",")), PARSE_ONCE())//
+								.addChild(factory.createSkipRule(factory.pattern(",")), PARSE_ONCE())//
 								.addChild(new Pair<>(WHITESPACE, PARSE_ANY()))//
 								.addChild(singleinvokeparam, PARSE_ONCE())//
 								, PARSE_ANY())//
 						, PARSE_OPTIONAL())//
 				.addChild(new Pair<>(WHITESPACE, PARSE_ANY()))//
-				.addChild(new SkipRule(compileLanguagePattern("\\)")), PARSE_ONCE())//
+				.addChild(factory.createSkipRule(factory.pattern("\\)")), PARSE_ONCE())//
 				, PARSE_OPTIONAL());
 		invokenode.addChild(new Pair<>(WHITESPACE, PARSE_MIN_ONCE()));
 		invokenode.addChild(occurrencevalue, PARSE_ONCE());
@@ -257,13 +260,13 @@ public class Language {
 		generaldeclarations.addChild(new Pair<>(declarenode, PARSE_ANY()));
 		generaldeclarations.addChild(new Pair<>(forwarddeclarenode, PARSE_ANY()));
 
-		languagenode.addChild(new SkipRule(compileLanguagePattern("language")), PARSE_ONCE());
+		languagenode.addChild(factory.createSkipRule(factory.pattern("language")), PARSE_ONCE());
 		languagenode.addChild(new Pair<>(WHITESPACE, PARSE_MIN_ONCE()));
-		languagenode.addChild(new ValueRule("name", declarednamematch, PARSE_ONCE()), PARSE_ONCE());
+		languagenode.addChild(factory.createValueRule("name", declarednamematch, PARSE_ONCE()), PARSE_ONCE());
 		languagenode.addChild(new Pair<>(WHITESPACE, PARSE_ANY()));
 		languagenode.addChild(ordernodebody, PARSE_ONCE());
 
-		ContainerRule langcontentnode = new AnyOrderRule()//
+		ContainerRule langcontentnode = factory.createAnyOrderRule()//
 				.addChild(WHITESPACE, PARSE_ANY())//
 				.addChild(languagenode, PARSE_ANY())//
 		;
@@ -282,19 +285,20 @@ public class Language {
 		}
 	}
 
-	private static Pattern parseRegexpInput(String input) throws ParseFailedException {
+	private static Pattern parseRegexpInput(RuleFactory factory, String input) throws ParseFailedException {
 		try {
 			String pattern = input.substring(1, input.length() - 1);
-			return compileLanguagePattern(pattern);
+			return factory.pattern(pattern);
 		} catch (PatternSyntaxException e) {
 			throw new ParseFailedException("Failed to compile regular expression: \"" + input + "\"");
 		}
 	}
 
-	private static InvokeParam<Occurrence> parseOccurrence(Statement stm) throws ParseFailedException {
+	private static InvokeParam<Occurrence> parseOccurrence(RuleFactory factory, Statement stm)
+			throws ParseFailedException {
 		Statement occurstm = stm.firstScope("occurrence");
 		if (occurstm != null) {
-			return new OccurrenceParam(occurstm.getValue());
+			return new OccurrenceParam(factory.occurrence(occurstm.getValue()));
 		}
 
 		// check for variable reference
@@ -305,10 +309,10 @@ public class Language {
 		return null;
 	}
 
-	private static InvokeParam<Pattern> parseRegex(Statement stm) throws ParseFailedException {
+	private static InvokeParam<Pattern> parseRegex(RuleFactory factory, Statement stm) throws ParseFailedException {
 		Statement regexstm = stm.firstScope("regex");
 		if (regexstm != null) {
-			return new RegexParam(parseRegexpInput(regexstm.getValue()));
+			return new RegexParam(parseRegexpInput(factory, regexstm.getValue()));
 		}
 
 		// check for variable reference
@@ -344,39 +348,41 @@ public class Language {
 		}
 	}
 
-	private static Object instantiateDeclaredObject(String type, String value) throws ParseFailedException {
+	private static Object instantiateDeclaredObject(RuleFactory factory, String type, String value)
+			throws ParseFailedException {
 		switch (type) {
 			case "occurrence":
-				return Occurrence.parse(value);
+				return factory.occurrence(value);
 			case "regex":
-				return parseRegexpInput(value);
+				return parseRegexpInput(factory, value);
 			default:
 				throw new ParseFailedException("Invalid declared object type: " + value);
 		}
 	}
 
-	private static ContainerRule instantiateContainerRule(String type, String identifier) throws ParseFailedException {
+	private static ContainerRule instantiateContainerRule(RuleFactory factory, String type, String identifier)
+			throws ParseFailedException {
 		switch (type) {
 			case "inorder":
-				return new InOrderRule(identifier);
+				return factory.createInOrderRule(identifier);
 			case "anyorder":
-				return new AnyOrderRule(identifier);
+				return factory.createAnyOrderRule(identifier);
 			case "firstorder":
-				return new FirstOrderRule(identifier);
+				return factory.createFirstOrderRule(identifier);
 			case "value":
-				return new ValueRule(identifier);
+				return factory.createValueRule(identifier);
 			default:
 				throw new ParseFailedException("Invalid container rule type: " + type);
 		}
 	}
 
-	private static ConsumeRule instantiateConsumeRule(String type, InvokeParam<Pattern> param, String alias)
-			throws ParseFailedException {
+	private static ConsumeRule instantiateConsumeRule(RuleFactory factory, String type, InvokeParam<Pattern> param,
+			String alias) throws ParseFailedException {
 		switch (type) {
 			case "skip":
-				return new SkipRule(alias, param);
+				return factory.createSkipRule(alias, param);
 			case "matches":
-				return new MatchesRule(alias, param);
+				return factory.createMatchesRule(alias, param);
 			default:
 				throw new ParseFailedException("Invalid consume rule type: " + type);
 		}
@@ -395,7 +401,8 @@ public class Language {
 		}
 	}
 
-	private static List<InvokeParam<?>> parseInvokeParams(Statement stm) throws ParseFailedException {
+	private static List<InvokeParam<?>> parseInvokeParams(RuleFactory factory, Statement stm)
+			throws ParseFailedException {
 		List<InvokeParam<?>> target = new ArrayList<>();
 		for (Pair<String, Statement> param : stm.getScopes()) {
 			final String paramvalue = param.value.getValue();
@@ -406,11 +413,11 @@ public class Language {
 					break;
 				}
 				case "param_occurrence": {
-					target.add(new OccurrenceParam(paramvalue));
+					target.add(new OccurrenceParam(factory.occurrence(paramvalue)));
 					break;
 				}
 				case "param_regex": {
-					target.add(new RegexParam(parseRegexpInput(paramvalue)));
+					target.add(new RegexParam(parseRegexpInput(factory, paramvalue)));
 					break;
 				}
 				default: {
@@ -442,15 +449,17 @@ public class Language {
 	}
 
 	private static void parseRules(Statement resultstm, Map<String, Language> langmap) throws ParseFailedException {
+		RuleFactory factory = new RuleFactory();
 		Set<Rule> undefinedrules = new HashSet<>();
-		parseRulesImpl(langmap, null, resultstm, ruleStackWithDefaultRules(), undefinedrules);
+		parseRulesImpl(langmap, null, resultstm, ruleStackWithDefaultRules(), undefinedrules, factory);
 		if (!undefinedrules.isEmpty()) {
 			throw new ParseFailedException("Some rules were not defined.");
 		}
 	}
 
 	private static void parseRulesImpl(Map<String, Language> langmap, ContainerRule container, Statement stm,
-			ArrayDeque<Pair<String, Object>> parseStack, Set<Rule> undefinedrules) throws ParseFailedException {
+			ArrayDeque<Pair<String, Object>> parseStack, Set<Rule> undefinedrules, RuleFactory factory)
+			throws ParseFailedException {
 		int parseStackAdded = 0;
 		try {
 			for (Pair<String, Statement> scopepair : stm.getScopes()) {
@@ -459,8 +468,9 @@ public class Language {
 					case "language_node": {
 						final String name = scoped.firstScope("name").getValue();
 
-						InOrderRule langrule = new InOrderRule();
-						parseRulesImpl(langmap, langrule, scoped.firstScope("body"), parseStack, undefinedrules);
+						InOrderRule langrule = factory.createInOrderRule(name);
+						parseRulesImpl(langmap, langrule, scoped.firstScope("body"), parseStack, undefinedrules,
+								factory);
 						String langid = name;
 						Language lang = new Language(name, langrule);
 						Language prev = langmap.put(langid, lang);
@@ -472,7 +482,7 @@ public class Language {
 						break;
 					}
 					case "invoke_node": {
-						final InvokeParam<Occurrence> occurrence = parseOccurrence(scoped);
+						final InvokeParam<Occurrence> occurrence = parseOccurrence(factory, scoped);
 						final String invokename = scoped.firstScope("name").getValue();
 						final Statement aliasstm = scoped.firstScope("alias_name");
 						final String alias = aliasstm == null ? null : aliasstm.getValue();
@@ -480,17 +490,18 @@ public class Language {
 						Statement paramsstm = scoped.firstScope("params");
 						List<InvokeParam<?>> invokeparams;
 						if (paramsstm != null) {
-							invokeparams = parseInvokeParams(paramsstm);
+							invokeparams = parseInvokeParams(factory, paramsstm);
 						} else {
 							invokeparams = Collections.emptyList();
 						}
-						final Rule rule = new InvokeRule(new VarReferenceParam<>(invokename), alias, invokeparams);
+						final Rule rule = factory.createInvokeRule(new VarReferenceParam<>(invokename), alias,
+								invokeparams);
 
 						container.addChild(rule, new ParseTimeData(occurrence, new DeclaringContext(parseStack)));
 						break;
 					}
 					case "container_node": {
-						final InvokeParam<Occurrence> occurrence = parseOccurrence(scoped);
+						final InvokeParam<Occurrence> occurrence = parseOccurrence(factory, scoped);
 						final String type = scoped.firstScope("type").getValue();
 						final Statement namestm = scoped.firstScope("name");
 						final String name = namestm == null ? null : namestm.getValue();
@@ -520,7 +531,7 @@ public class Language {
 								rule = (ContainerRule) foundrule;
 							} else {
 								// was not in stack
-								rule = instantiateContainerRule(type, name);
+								rule = instantiateContainerRule(factory, type, name);
 								if ("value".equals(type)) {
 									ValueRule vr = (ValueRule) rule;
 									if (scoped.firstScope("nonempty") != null) {
@@ -532,7 +543,7 @@ public class Language {
 								++parseStackAdded;
 							}
 						} else {
-							rule = instantiateContainerRule(type, name);
+							rule = instantiateContainerRule(factory, type, name);
 						}
 
 						parseDeclaredParams(scoped, rule);
@@ -549,15 +560,15 @@ public class Language {
 							throw new ParseFailedException("Container rule must have name or occurrence");
 						}
 
-						parseRulesImpl(langmap, rule, scoped.firstScope("body"), parseStack, undefinedrules);
+						parseRulesImpl(langmap, rule, scoped.firstScope("body"), parseStack, undefinedrules, factory);
 						break;
 					}
 					case "consume_node": {
 						final String type = scoped.firstScope("type").getValue();
-						final InvokeParam<Occurrence> occurrence = parseOccurrence(scoped);
-						final InvokeParam<Pattern> param = parseRegex(scoped);
+						final InvokeParam<Occurrence> occurrence = parseOccurrence(factory, scoped);
+						final InvokeParam<Pattern> param = parseRegex(factory, scoped);
 						final String alias = scoped.firstValue("alias_name");
-						final Rule rule = instantiateConsumeRule(type, param, alias);
+						final Rule rule = instantiateConsumeRule(factory, type, param, alias);
 
 						container.addChild(rule, new ParseTimeData(occurrence, new DeclaringContext(parseStack)));
 						break;
@@ -566,7 +577,7 @@ public class Language {
 						final String type = scoped.firstScope("type").getValue();
 						final String name = scoped.firstScope("name").getValue();
 						final String value = scoped.firstScope("expression").getValue();
-						final Object parsed = instantiateDeclaredObject(type, value);
+						final Object parsed = instantiateDeclaredObject(factory, type, value);
 
 						parseStack.push(new Pair<>(name, parsed));
 						++parseStackAdded;
@@ -587,7 +598,7 @@ public class Language {
 							// do nothing
 						} else {
 							// instantiate
-							ContainerRule rule = instantiateContainerRule(type, name);
+							ContainerRule rule = instantiateContainerRule(factory, type, name);
 							undefinedrules.add(rule);
 							// add to stack
 							parseStack.push(new Pair<>(rule.getIdentifierName(), new RuleDeclaration(rule)));
@@ -608,7 +619,6 @@ public class Language {
 	}
 
 	private static ArrayDeque<Pair<String, Object>> addDefaultRulesToStack(ArrayDeque<Pair<String, Object>> stack) {
-		stack.push(new Pair<>("whitespace", WHITESPACE_PATTERN));
 		return stack;
 	}
 

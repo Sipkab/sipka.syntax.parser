@@ -68,10 +68,6 @@ public class AnyOrderRule extends ContainerRule {
 		super(identifierName);
 	}
 
-	public AnyOrderRule() {
-		super();
-	}
-
 	private Map<Rule, ParseContext> getRuleContextMap(ParseContext context) {
 		Map<Rule, ParseContext> result = new HashMap<>();
 		for (Pair<Rule, ParseTimeData> rule : getChildren()) {

@@ -62,10 +62,6 @@ public class InOrderRule extends ContainerRule {
 		super(identifierName);
 	}
 
-	public InOrderRule() {
-		super();
-	}
-
 	@Override
 	protected ParsingResult parseChildren(ParseHelper helper, DocumentData s, ParseContext context,
 			ParseTimeData parsedata) {

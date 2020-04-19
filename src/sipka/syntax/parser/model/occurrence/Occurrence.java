@@ -15,8 +15,6 @@
  */
 package sipka.syntax.parser.model.occurrence;
 
-import sipka.syntax.parser.model.ParseFailedException;
-
 public abstract class Occurrence {
 	public static final Occurrence ANY = new AnyOccurrence();
 	public static final Occurrence ZERO = new ExactOccurrence(0);
@@ -25,7 +23,7 @@ public abstract class Occurrence {
 	public static final Occurrence MAX_ONCE = new AtMostOccurrence(1);
 	public static final Occurrence OPTIONAL = MAX_ONCE;
 
-	private static Occurrence parseSingle(String input) throws ParseFailedException {
+	private static Occurrence parseSingle(String input) throws IllegalArgumentException {
 		switch (input) {
 			case "?": {
 				return MAX_ONCE;
@@ -89,17 +87,17 @@ public abstract class Occurrence {
 							return new RangeOccurrence(num1, num2);
 						}
 						default: {
-							throw new ParseFailedException("Failed to parse occurrence");
+							throw new IllegalArgumentException("Failed to parse occurrence");
 						}
 					}
 				} catch (NumberFormatException e) {
-					throw new ParseFailedException("Failed to parse number: " + e.getMessage());
+					throw new IllegalArgumentException("Failed to parse number: " + e.getMessage());
 				}
 			}
 		}
 	}
 
-	public static Occurrence parse(String value) throws ParseFailedException {
+	public static Occurrence parse(String value) throws IllegalArgumentException {
 		String[] split = value.split("[\\| \\t\\r\\n\\v\\f]+");
 		Occurrence result;
 		if (split.length > 1) {

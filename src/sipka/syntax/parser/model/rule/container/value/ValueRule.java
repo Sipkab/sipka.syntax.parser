@@ -33,7 +33,6 @@ import sipka.syntax.parser.model.statement.Statement;
 import sipka.syntax.parser.model.statement.ValueStatement;
 import sipka.syntax.parser.model.statement.repair.ParsingInformation;
 import sipka.syntax.parser.util.ArrayRangeCharSequence;
-import sipka.syntax.parser.util.Pair;
 
 public class ValueRule extends InOrderRule {
 	protected static class ValueParsingInformation extends ParsingInformation {
@@ -62,16 +61,6 @@ public class ValueRule extends InOrderRule {
 	}
 
 	private boolean nonEmpty = false;
-
-	public ValueRule(String valueName, Pair<Rule, ParseTimeData> rule) {
-		super(valueName);
-		addChild(rule);
-	}
-
-	public ValueRule(String valueName, Rule r, ParseTimeData pdata) {
-		super(valueName);
-		addChild(r, pdata);
-	}
 
 	public ValueRule(String valueName) {
 		super(valueName);

@@ -24,7 +24,6 @@ import sipka.syntax.parser.model.parse.context.ParseContext;
 import sipka.syntax.parser.model.parse.document.DocumentData;
 import sipka.syntax.parser.model.parse.document.DocumentRegion;
 import sipka.syntax.parser.model.parse.params.InvokeParam;
-import sipka.syntax.parser.model.parse.params.RegexParam;
 import sipka.syntax.parser.model.rule.ParseHelper;
 import sipka.syntax.parser.model.rule.ParsingResult;
 import sipka.syntax.parser.model.rule.Rule;
@@ -35,19 +34,6 @@ import sipka.syntax.parser.util.ArrayRangeCharSequence;
 
 public abstract class ConsumeRule extends Rule {
 	private final InvokeParam<Pattern> param;
-
-	public ConsumeRule(Pattern pattern) {
-		this(new RegexParam(pattern));
-	}
-
-	public ConsumeRule(InvokeParam<Pattern> param) {
-		super(null);
-		this.param = param;
-	}
-
-	public ConsumeRule(String identifierName, Pattern pattern) {
-		this(identifierName, new RegexParam(pattern));
-	}
 
 	public ConsumeRule(String identifierName, InvokeParam<Pattern> param) {
 		super(identifierName);

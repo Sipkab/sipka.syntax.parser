@@ -29,20 +29,8 @@ public class MatchesRule extends ConsumeRule {
 	//TODO complete implementation of replacement
 	private String replacement = null;
 
-	public MatchesRule(Pattern pattern) {
-		super(pattern);
-	}
-
-	public MatchesRule(InvokeParam<Pattern> param) {
-		super(param);
-	}
-
 	public MatchesRule(String identifierName, InvokeParam<Pattern> param) {
 		super(identifierName, param);
-	}
-
-	public MatchesRule(String identifierName, Pattern pattern) {
-		super(identifierName, pattern);
 	}
 
 	@Override

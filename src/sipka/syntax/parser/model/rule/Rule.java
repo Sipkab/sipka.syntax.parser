@@ -17,14 +17,12 @@ package sipka.syntax.parser.model.rule;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 import sipka.syntax.parser.model.ParsingCancelledException;
 import sipka.syntax.parser.model.parse.ParseTimeData;
 import sipka.syntax.parser.model.parse.context.ParseContext;
 import sipka.syntax.parser.model.parse.document.DocumentData;
-import sipka.syntax.parser.model.parse.document.DocumentRegion;
 import sipka.syntax.parser.model.statement.Statement;
 import sipka.syntax.parser.model.statement.repair.ParsingInformation;
 import sipka.syntax.parser.util.Pair;
@@ -33,15 +31,12 @@ public abstract class Rule {
 	public static final String BUILTIN_VAR_PREFIX = "@";
 	private static final String PARAMETER_VAR_NAME = BUILTIN_VAR_PREFIX + "param";
 
-	private static final AtomicInteger ruleCounter = new AtomicInteger();
-
 	private final String identifierName;
 	private List<Pair<String, Class<?>>> params;
-	private final int ruleId;
+	/*default*/ int ruleId;
 
 	public Rule(String identifierName) {
 		this.identifierName = identifierName;
-		this.ruleId = ruleCounter.getAndIncrement();
 	}
 
 	protected abstract ParsingResult parseStatementImpl(ParseHelper helper, DocumentData s, ParseContext context,

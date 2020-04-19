@@ -34,11 +34,7 @@ import sipka.syntax.parser.model.statement.repair.ParsingInformation;
 import sipka.syntax.parser.util.Pair;
 
 public abstract class ContainerRule extends Rule {
-	private final Collection<Pair<Rule, ParseTimeData>> children = new ArrayList<>();
-
-	public ContainerRule() {
-		super(null);
-	}
+	private final List<Pair<Rule, ParseTimeData>> children = new ArrayList<>();
 
 	public ContainerRule(String identifierName) {
 		super(identifierName);

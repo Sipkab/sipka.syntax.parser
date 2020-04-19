@@ -69,12 +69,9 @@ public class InvokeRule extends Rule {
 	private final String alias;
 	private final List<InvokeParam<?>> invokeParams;
 
-	public InvokeRule(InvokeParam<?> ruleParam, String alias) {
-		this(ruleParam, alias, Collections.emptyList());
-	}
-
-	public InvokeRule(InvokeParam<?> ruleParam, String alias, List<InvokeParam<?>> invokeParams) {
-		super(null);
+	public InvokeRule(String identifiername, InvokeParam<?> ruleParam, String alias,
+			List<InvokeParam<?>> invokeParams) {
+		super(identifiername);
 		this.ruleParam = ruleParam;
 		this.alias = alias;
 		this.invokeParams = invokeParams;
