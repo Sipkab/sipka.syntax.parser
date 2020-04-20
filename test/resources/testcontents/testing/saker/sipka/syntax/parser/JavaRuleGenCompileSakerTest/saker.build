@@ -1,0 +1,19 @@
+build(
+	out classdir
+) {
+	$cdir = sipka.syntax.parser.transpile(
+		test.lang,
+		ClassName: test.Languages
+	)[SourceDirectory]
+	$javac = saker.java.compile(
+		SourceDirectories: [
+			src,
+			$cdir
+		],
+		ClassPath: saker.java.classpath.bundle(
+			"sipka.syntax.parser-lib-v{ sipka.syntax.parser.version() }"
+		)
+		Identifier: src
+	)
+	$classdir = $javac[ClassDirectory]
+}

@@ -1,0 +1,1 @@
+sipka.syntax.parser.transpile=sipka.syntax.parser.saker.LanguageJavaTranspilerTaskFactory

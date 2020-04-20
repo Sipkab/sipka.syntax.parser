@@ -31,14 +31,20 @@ public abstract class ParserTestCase extends SakerTestCase {
 	}
 
 	protected final Path getFilePath(String filename) {
-		return Paths.get(getClass().getName().replace('.', '/') + '/' + filename);
+		return Paths.get("test/resources/testcontents/" + getClass().getName().replace('.', '/') + '/' + filename);
 	}
 
 	public Language getLanguage() throws IOException, ParseFailedException {
 		try {
 			return getTestLanguageFromPath(getFilePath("test.lang"));
 		} catch (IOException e) {
-			return getTestLanguageFromPath(Paths.get(getClass().getName().replace('.', '/') + ".lang"));
+			try {
+				return getTestLanguageFromPath(
+						Paths.get("test/resources/testcontents/" + getClass().getName().replace('.', '/') + ".lang"));
+			} catch (IOException e2) {
+				e2.addSuppressed(e);
+				throw e2;
+			}
 		}
 	}
 

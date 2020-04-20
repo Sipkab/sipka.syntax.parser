@@ -4,31 +4,54 @@ static(VERSION_saker.build) = nest.dependency.resolve(
 	saker.build,
 	Filters: nest.dependency.filter.kind([]),
 )[Bundles][0][BundleIdentifier][VersionNumber]
+static(VERSION_saker.nest) = nest.dependency.resolve(
+	saker.nest,
+	Filters: nest.dependency.filter.kind([]),
+)[Bundles][0][BundleIdentifier][VersionNumber]
 
 compile(
-	out javac,
+	out libjavac,
+	out mainjavac,
 ) {
-	$javac = saker.java.compile(
-		SourceDirectories: src,
+	$libjavac = saker.java.compile(
+		SourceDirectories: lib/src,
+		Identifier: lib
+	)
+	$mainjavac = saker.java.compile(
+		SourceDirectories: main/src,
+		ClassPath: [
+			$libjavac,
+			saker.java.classpath.bundle([
+				"saker.build-api-v{ static(VERSION_saker.build) }",
+				"saker.nest-api-v{ static(VERSION_saker.nest) }",
+			])
+		],
+		Identifier: main
 	)
 	
 }
 export(
 	out compile = include(compile),
-	out jar,
+	out mainjar,
 	out sourcejar,
+	out libjar,
 	
 	out bundlepaths = [
-		$jar[Path],
+		$mainjar[Path],
+		$libjar[Path],
 		$sourcejar[Path],
 	]
 ){
-	$jar = saker.jar.create(
+	$mainjar = saker.jar.create(
 		Output: sipka.syntax.parser.jar,
 		Resources: [
 			{
 				Resources: **/*.class, 
-				Directory: $compile[javac][ClassDirectory],
+				Directory: $compile[mainjavac][ClassDirectory],
+			},
+			{
+				Directory: main/resources/,
+				Resources: **
 			},
 			{
 				Files: LICENSE,
@@ -43,11 +66,35 @@ export(
 			},
 		},
 	)
+	$libjar = saker.jar.create(
+		Output: sipka.syntax.parser-lib.jar,
+		Resources: [
+			{
+				Resources: **/*.class, 
+				Directory: $compile[libjavac][ClassDirectory],
+			},
+			{
+				Directory: lib/resources/,
+				Resources: **
+			},
+			{
+				Files: LICENSE,
+				TargetDirectory: META-INF,
+			},
+		],
+		Manifest: {
+			MainAttributes: {
+				Nest-Bundle-Format-Version: 1,
+				Nest-Bundle-Identifier: "sipka.syntax.parser-lib-v{ global(VERSION_sipka.syntax.parser) }",
+				Nest-Bundle-Source: "sipka.syntax.parser-sources-v{ global(VERSION_sipka.syntax.parser) }",
+			},
+		},
+	)
 	$sourcejar = saker.jar.create(
 		Output: sipka.syntax.parser-sources.jar,
 		Resources: [
 			{
-				Directory: src,
+				Directory: [main/src, lib/src/],
 				Resources: **/*.java,
 			},
 			{
@@ -81,24 +128,38 @@ upload(){
 test(
 	in jreversion = 8,
 ){
-	$compile = include(compile)
+	$export = include(export)
+	$compile = $export[compile]
+	
+	$instrumentedjar = nest.test.instrument(
+		nest.bundle.download("saker.build-test-v{ static(VERSION_saker.build) }")[BundlePaths][0],
+		NestVersion: static(VERSION_saker.nest),
+	)
+	
 	$testcompile = saker.java.compile(
 		SourceDirectories: test/src/,
 		ClassPath: [
-			$compile[javac],
+			$compile[libjavac][ClassDirectory],
+			$instrumentedjar,
 			saker.java.classpath.bundle([
 				"saker.build-test-runner-v{ static(VERSION_saker.build) }",
 				"saker.build-test-utils-v{ static(VERSION_saker.build) }",
+				"saker.nest-test-utils-v{ static(VERSION_saker.nest )}"
 			]),
 		],
 		Identifier: tests
 	)
 	
-	$test = saker.java.test(
+	$resolveddependencies = nest.dependency.resolve(
+		Bundles: [saker.java.compiler],
+		Filters: nest.dependency.filter.kind(classpath)
+	)
+	
+	saker.java.test(
 		TestRunnerClassPath: [
 			saker.java.classpath.bundle("saker.build-test-runner-v{ static(VERSION_saker.build) }"),
 		],
-		ClassPath: $compile[javac],
+		ClassPath: $compile[libjavac],
 		TestInvokerClass: testing.saker.SakerJavaTestingInvoker,
 		TestClassPath: [
 			$testcompile[ClassDirectory],
@@ -107,13 +168,58 @@ test(
 			]),
 		],
 		TestClasses: [
-			**.*Test
+			testing.sipka.**.*Test
 		],
 		NonDeterministicTests: **,
 		TestInvokerParameters: {
 			TimeoutMillis: 120000,
 		},
-		WorkingDirectory: test/resources/,
+		MaxJVMCount: 1,
+		FailFast: true,
+		AbortOnFail: true,
+		Verbose: true,
+		JavaSDK: saker.java.sdk($jreversion),
+	)
+	
+	saker.java.test(
+		TestRunnerClassPath: [
+			saker.java.classpath.bundle("saker.build-test-runner-v{ static(VERSION_saker.build) }"),
+		],
+		ClassPath: [
+			$instrumentedjar,
+		],
+		DependencyClassPath: [
+			$export[compile][libjavac],
+		],
+		TestInvokerClass: testing.saker.SakerJavaTestingInvoker,
+		TestClassPath: [
+			$testcompile[ClassDirectory],
+			saker.java.classpath.bundle([
+				"saker.build-test-utils-v{ static(VERSION_saker.build) }",
+				"saker.nest-test-utils-v{ static(VERSION_saker.nest )}",
+			]),
+		],
+		TestClasses: [
+			testing.saker.**.*Test
+		],
+		NonDeterministicTests: **,
+		TestClassParameters: {
+			**: {
+				RepositoryJarPath: nest.bundle.localize("saker.nest-test-v{ static(VERSION_saker.nest) }")[BundleLocalPaths][0],
+				RepositoryParameterBundles: "{ 
+						foreach $path in $export[bundlepaths]: "{ std.file.mirror($path) };"  
+					};{
+						foreach $path in nest.bundle.localize($resolveddependencies)[BundleLocalPaths]: ";{ $path }"
+					}",
+				SyntaxParserVersion: global(VERSION_sipka.syntax.parser),
+				SyntaxParserExportPath: std.file.mirror($export[libjar][Path]),
+			}
+		},
+		TestInvokerParameters: {
+			SakerJarPath: std.file.mirror($instrumentedjar),
+			TimeoutMillis: 120000,
+			TestsBaseBuildDirectory: std.file.mirror.path(std.file.place(test/build)),
+		},
 		MaxJVMCount: 1,
 		FailFast: true,
 		AbortOnFail: true,

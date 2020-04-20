@@ -1,6 +1,0 @@
-language test {
-	value v {
-		matches "[0-9]+" 1;
-	}
-	include v 1;
-}
