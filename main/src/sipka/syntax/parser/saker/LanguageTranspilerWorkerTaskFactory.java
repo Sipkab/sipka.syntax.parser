@@ -81,6 +81,9 @@ public class LanguageTranspilerWorkerTaskFactory implements TaskFactory<Language
 		String genclassstr = RuleJavaGenerator.generateLanguageJavaClass(className, langs);
 		SakerPath outfilepath = SakerPath.valueOf(className.replace('.', '/') + ".java");
 
+		//clear any previous file state
+		outputdir.clear();
+
 		SakerDirectory srcoutdir;
 		if (!SakerPath.EMPTY.equals(outfilepath.getParent())) {
 			srcoutdir = taskcontext.getTaskUtilities().resolveDirectoryAtRelativePathCreate(outputdir,
@@ -91,7 +94,7 @@ public class LanguageTranspilerWorkerTaskFactory implements TaskFactory<Language
 		ByteArraySakerFile outfile = new ByteArraySakerFile(outfilepath.getFileName(),
 				genclassstr.getBytes(StandardCharsets.UTF_8));
 		srcoutdir.add(outfile);
-		outfile.synchronize();
+		outputdir.synchronize();
 
 		taskcontext.getTaskUtilities().reportOutputFileDependency(null, outfile);
 
