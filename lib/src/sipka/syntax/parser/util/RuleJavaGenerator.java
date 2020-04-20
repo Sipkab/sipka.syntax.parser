@@ -53,6 +53,34 @@ import sipka.syntax.parser.model.rule.container.value.ValueRule;
 import sipka.syntax.parser.model.rule.invoke.InvokeRule;
 
 public class RuleJavaGenerator {
+	private static final String CANONICAL_NAME_RULEINVOCATIONVARREFERENCEPARAM = RuleInvocationVarReferenceParam.class
+			.getCanonicalName();
+	private static final String CANONICAL_NAME_VARREFERENCEPARAM = VarReferenceParam.class.getCanonicalName();
+	private static final String CANONICAL_NAME_DECLARINGCONTEXT = DeclaringContext.class.getCanonicalName();
+	private static final String CANONICAL_NAME_OCCURRENCEPARAM = OccurrenceParam.class.getCanonicalName();
+	private static final String CANONICAL_NAME_REGEXPAREM = RegexParam.class.getCanonicalName();
+	private static final String CANONICAL_NAME_INVOKERULE = InvokeRule.class.getCanonicalName();
+	private static final String CANONICAL_NAME_VALUERULE = ValueRule.class.getCanonicalName();
+	private static final String CANONICAL_NAME_INORDERRULE = InOrderRule.class.getCanonicalName();
+	private static final String CANONICAL_NAME_FIRSTORDERRULE = FirstOrderRule.class.getCanonicalName();
+	private static final String CANONICAL_NAME_ANYORDERRULE = AnyOrderRule.class.getCanonicalName();
+	private static final String CANONICAL_NAME_SKIPRULE = SkipRule.class.getCanonicalName();
+	private static final String CANONICAL_NAME_MATCHESRULE = MatchesRule.class.getCanonicalName();
+	private static final String CANONICAL_NAME_RULEDECLARATION = RuleDeclaration.class.getCanonicalName();
+	private static final String CANONICAL_NAME_PAIR = Pair.class.getCanonicalName();
+	private static final String CANONICAL_NAME_PARSETIMEDATA = ParseTimeData.class.getCanonicalName();
+	private static final String CANONICAL_NAME_RULEFACTORY = RuleFactory.class.getCanonicalName();
+	private static final String CANONICAL_NAME_LANGUAGE = Language.class.getCanonicalName();
+
+	private static final String VAR_RULE_PREFIX = "r";
+	private static final String VAR_PARSETIMEDATA_PREFIX = "t";
+	private static final String VAR_PAIR_PREFIX = "p";
+	private static final String VAR_RULEDECLARATION_PREFIX = "n";
+	private static final String VAR_RULEINVOCATIONVARREFERENCEPARAM_PREFIX = "i";
+	private static final String VAR_VARREFERENCEPARAM_PREFIX = "v";
+	private static final String VAR_DECLARATIONCONTEXT_PREFIX = "d";
+	private static final String VAR_OCCURRENCE_PREFIX = "o";
+	private static final String VAR_PATTERN_PREFIX = "e";
 
 	public static String generateLanguageJavaClass(String classname, Map<String, Language> languages) {
 		StringBuilder sb = new StringBuilder();
@@ -75,7 +103,7 @@ public class RuleJavaGenerator {
 	private static void appendLanguageRetrievalMethod(StringBuilder sb, String body, String languagename) {
 		sb.append("@SuppressWarnings({ \"rawtypes\", \"unchecked\" })\n");
 		sb.append("public static ");
-		sb.append(Language.class.getCanonicalName());
+		sb.append(CANONICAL_NAME_LANGUAGE);
 		sb.append(" get");
 		sb.append(languagename);
 		sb.append("() {\n");
@@ -119,12 +147,12 @@ public class RuleJavaGenerator {
 		Objects.requireNonNull(lang, "language");
 		ContainerRule baserule = lang.getRule();
 		StringBuilder sb = new StringBuilder();
-		sb.append(Language.class.getCanonicalName());
+		sb.append(CANONICAL_NAME_LANGUAGE);
 		sb.append(" language;\n");
 		sb.append("{\n");
-		sb.append(RuleFactory.class.getCanonicalName());
+		sb.append(CANONICAL_NAME_RULEFACTORY);
 		sb.append(" factory = new ");
-		sb.append(RuleFactory.class.getCanonicalName());
+		sb.append(CANONICAL_NAME_RULEFACTORY);
 		sb.append("();\n");
 
 		int predecllen = sb.length();
@@ -137,7 +165,7 @@ public class RuleJavaGenerator {
 		String baserulevarname = vc.getRule(baserule);
 
 		sb.append("language = new ");
-		sb.append(Language.class.getCanonicalName());
+		sb.append(CANONICAL_NAME_LANGUAGE);
 		sb.append("(");
 		appendStringLiteral(sb, lang.getName());
 		sb.append(", ");
@@ -246,6 +274,7 @@ public class RuleJavaGenerator {
 	}
 
 	private static class VariablesCache {
+
 		private StringBuilder sb = new StringBuilder();
 
 		private Map<String, Integer> occurrences = new TreeMap<>();
@@ -268,13 +297,13 @@ public class RuleJavaGenerator {
 			int size = ruleVars.size();
 			Integer present = ruleVars.putIfAbsent(r, size);
 			if (present != null) {
-				return "rule" + present;
+				return VAR_RULE_PREFIX + present;
 			}
 			StringBuilder sb = new StringBuilder();
 			RuleHeaderVisitor headerVisitor = new RuleHeaderVisitor(this, sb, size);
 			headerVisitor.printHeader(r);
 			this.sb.append(sb);
-			return "rule" + size;
+			return VAR_RULE_PREFIX + size;
 		}
 
 		public String getParseTimeData(String occurrencevar, String contextvar) {
@@ -282,13 +311,13 @@ public class RuleJavaGenerator {
 			int size = parseTimeDatasVars.size();
 			Integer present = parseTimeDatasVars.putIfAbsent(p, size);
 			if (present != null) {
-				return "ptd" + present;
+				return VAR_PARSETIMEDATA_PREFIX + present;
 			}
-			sb.append(ParseTimeData.class.getCanonicalName());
-			sb.append(" ptd");
+			sb.append(CANONICAL_NAME_PARSETIMEDATA);
+			sb.append(" " + VAR_PARSETIMEDATA_PREFIX);
 			sb.append(size);
 			sb.append(" = new ");
-			sb.append(ParseTimeData.class.getCanonicalName());
+			sb.append(CANONICAL_NAME_PARSETIMEDATA);
 			sb.append("(");
 			sb.append(occurrencevar);
 			if (contextvar != null) {
@@ -296,7 +325,7 @@ public class RuleJavaGenerator {
 				sb.append(contextvar);
 			}
 			sb.append(");\n");
-			return "ptd" + size;
+			return VAR_PARSETIMEDATA_PREFIX + size;
 		}
 
 		public String getStringAndUnescapedPair(String keystr, String var) {
@@ -304,19 +333,19 @@ public class RuleJavaGenerator {
 			int size = pairVars.size();
 			Integer present = pairVars.putIfAbsent(p, size);
 			if (present != null) {
-				return "pair" + present;
+				return VAR_PAIR_PREFIX + present;
 			}
-			sb.append(Pair.class.getCanonicalName());
-			sb.append(" pair");
+			sb.append(CANONICAL_NAME_PAIR);
+			sb.append(" " + VAR_PAIR_PREFIX);
 			sb.append(size);
 			sb.append(" = new ");
-			sb.append(Pair.class.getCanonicalName());
+			sb.append(CANONICAL_NAME_PAIR);
 			sb.append("(");
 			appendStringLiteral(sb, keystr);
 			sb.append(", ");
 			sb.append(var);
 			sb.append(");\n");
-			return "pair" + size;
+			return VAR_PAIR_PREFIX + size;
 		}
 
 		public void fillRuleDeclarations(StringBuilder sb) {
@@ -338,7 +367,7 @@ public class RuleJavaGenerator {
 					if (dc == null) {
 						continue;
 					}
-					sb.append("rdecl");
+					sb.append(VAR_RULEDECLARATION_PREFIX);
 					sb.append(entry.getValue());
 					sb.append(".setDeclarationContext(");
 					sb.append(getDeclarationContext(dc));
@@ -352,60 +381,59 @@ public class RuleJavaGenerator {
 			int size = ruleDecls.size();
 			Integer present = ruleDecls.putIfAbsent(rd, size);
 			if (present != null) {
-				return "rdecl" + present;
+				return VAR_RULEDECLARATION_PREFIX + present;
 			}
 			StringBuilder sb = new StringBuilder();
-			sb.append(RuleDeclaration.class.getCanonicalName());
-			sb.append(" rdecl");
+			sb.append(CANONICAL_NAME_RULEDECLARATION);
+			sb.append(" " + VAR_RULEDECLARATION_PREFIX);
 			sb.append(size);
 			sb.append(" = new ");
-			sb.append(RuleDeclaration.class.getCanonicalName());
+			sb.append(CANONICAL_NAME_RULEDECLARATION);
 			sb.append("(");
 
 			sb.append(this.getRule(rd.getRule()));
 
 			sb.append(");\n");
 			this.sb.append(sb);
-			return "rdecl" + size;
+			return VAR_RULEDECLARATION_PREFIX + size;
 		}
 
 		public String getRuleInvocationVarReferenceParam(RuleInvocationVarReferenceParam<?> param) {
-
 			int size = ruleVarRefs.size();
 			Integer present = ruleVarRefs.putIfAbsent(param, size);
 			if (present != null) {
-				return "rivref" + present;
+				return VAR_RULEINVOCATIONVARREFERENCEPARAM_PREFIX + present;
 			}
 			StringBuilder sb = new StringBuilder();
-			sb.append(RuleInvocationVarReferenceParam.class.getCanonicalName());
-			sb.append(" rivref");
+			sb.append(CANONICAL_NAME_RULEINVOCATIONVARREFERENCEPARAM);
+			sb.append(" " + VAR_RULEINVOCATIONVARREFERENCEPARAM_PREFIX);
 			sb.append(size);
 			sb.append(" = new ");
-			sb.append(RuleInvocationVarReferenceParam.class.getCanonicalName());
+			sb.append(CANONICAL_NAME_RULEINVOCATIONVARREFERENCEPARAM);
 			sb.append("(");
 			sb.append(getRule(param.getRule()));
 			sb.append(", ");
 			appendStringLiteral(sb, param.getVariableName());
 			sb.append(");\n");
 			this.sb.append(sb);
-			return "rivref" + size;
+			return VAR_RULEINVOCATIONVARREFERENCEPARAM_PREFIX + size;
 		}
 
 		public String getVarReferenceParam(String name) {
 			int size = varrefs.size();
 			Integer present = varrefs.putIfAbsent(name, size);
 			if (present != null) {
-				return "vref" + present;
+				return VAR_VARREFERENCEPARAM_PREFIX + present;
 			}
-			sb.append(VarReferenceParam.class.getCanonicalName());
-			sb.append(" vref");
+			sb.append(CANONICAL_NAME_VARREFERENCEPARAM);
+			sb.append(" " + VAR_VARREFERENCEPARAM_PREFIX);
 			sb.append(size);
 			sb.append(" = new ");
-			sb.append(VarReferenceParam.class.getCanonicalName());
+			sb.append(CANONICAL_NAME_VARREFERENCEPARAM);
 			sb.append("(");
 			appendStringLiteral(sb, name);
 			sb.append(");\n");
-			return "vref" + size;
+			return VAR_VARREFERENCEPARAM_PREFIX + size;
 		}
 
 		public String getDeclarationContext(DeclaringContext declcontext) {
@@ -413,19 +441,19 @@ public class RuleJavaGenerator {
 				return null;
 			}
 			if (DeclaringContext.EMPTY.equals(declcontext)) {
-				return DeclaringContext.class.getCanonicalName() + ".EMPTY";
+				return CANONICAL_NAME_DECLARINGCONTEXT + ".EMPTY";
 			}
 			int size = declarationContexts.size();
 			Integer present = declarationContexts.putIfAbsent(declcontext, size);
 			if (present != null) {
-				return "declcontext" + present;
+				return VAR_DECLARATIONCONTEXT_PREFIX + present;
 			}
 			StringBuilder sb = new StringBuilder();
-			sb.append(DeclaringContext.class.getCanonicalName());
-			sb.append(" declcontext");
+			sb.append(CANONICAL_NAME_DECLARINGCONTEXT);
+			sb.append(" " + VAR_DECLARATIONCONTEXT_PREFIX);
 			sb.append(size);
 			sb.append(" = new ");
-			sb.append(DeclaringContext.class.getCanonicalName());
+			sb.append(CANONICAL_NAME_DECLARINGCONTEXT);
 			sb.append("(");
 			Set<Entry<String, Object>> localsentries = declcontext.getLocalsMap().entrySet();
 			appendAsListStart(sb, localsentries);
@@ -452,7 +480,7 @@ public class RuleJavaGenerator {
 			}
 			sb.append("));\n");
 			this.sb.append(sb);
-			return "declcontext" + size;
+			return VAR_DECLARATIONCONTEXT_PREFIX + size;
 		}
 
 		public String getOccurrence(Occurrence occur) {
@@ -463,17 +491,17 @@ public class RuleJavaGenerator {
 			int size = occurrences.size();
 			Integer present = occurrences.putIfAbsent(occstr, size);
 			if (present != null) {
-				return "occ" + present;
+				return VAR_OCCURRENCE_PREFIX + present;
 			}
-			sb.append(OccurrenceParam.class.getCanonicalName());
-			sb.append(" occ");
+			sb.append(CANONICAL_NAME_OCCURRENCEPARAM);
+			sb.append(" " + VAR_OCCURRENCE_PREFIX);
 			sb.append(size);
 			sb.append(" = new ");
-			sb.append(OccurrenceParam.class.getCanonicalName());
+			sb.append(CANONICAL_NAME_OCCURRENCEPARAM);
 			sb.append("(factory.occurrence(");
 			appendStringLiteral(sb, occstr);
 			sb.append("));\n");
-			return "occ" + size;
+			return VAR_OCCURRENCE_PREFIX + size;
 		}
 
 		public String getPattern(Pattern pattern) {
@@ -484,17 +512,17 @@ public class RuleJavaGenerator {
 			int size = patterns.size();
 			Integer present = patterns.putIfAbsent(patternstr, size);
 			if (present != null) {
-				return "pattern" + present;
+				return VAR_PATTERN_PREFIX + present;
 			}
-			sb.append(RegexParam.class.getCanonicalName());
-			sb.append(" pattern");
+			sb.append(CANONICAL_NAME_REGEXPAREM);
+			sb.append(" " + VAR_PATTERN_PREFIX);
 			sb.append(size);
 			sb.append(" = new ");
-			sb.append(RegexParam.class.getCanonicalName());
+			sb.append(CANONICAL_NAME_REGEXPAREM);
 			sb.append("(java.util.regex.Pattern.compile(");
 			appendStringLiteral(sb, patternstr);
 			sb.append("));\n");
-			return "pattern" + size;
+			return VAR_PATTERN_PREFIX + size;
 		}
 
 		public CharSequence getVariablesString() {
@@ -589,6 +617,7 @@ public class RuleJavaGenerator {
 	}
 
 	private static final class RuleHeaderVisitor implements RuleVisitor {
+
 		private final VariablesCache vc;
 		private final StringBuilder sb;
 		private final int idx;
@@ -609,8 +638,8 @@ public class RuleJavaGenerator {
 			String alias = rule.getAlias();
 			List<InvokeParam<?>> invokeparams = rule.getInvokeParams();
 
-			sb.append(InvokeRule.class.getCanonicalName());
-			sb.append(" rule");
+			sb.append(CANONICAL_NAME_INVOKERULE);
+			sb.append(" " + VAR_RULE_PREFIX);
 			sb.append(idx);
 			sb.append(" = factory.createInvokeRule(");
 			if (idname != null) {
@@ -639,15 +668,15 @@ public class RuleJavaGenerator {
 
 		@Override
 		public void visit(ValueRule rule) {
-			sb.append(ValueRule.class.getCanonicalName());
-			sb.append(" rule");
+			sb.append(CANONICAL_NAME_VALUERULE);
+			sb.append(" " + VAR_RULE_PREFIX);
 			sb.append(idx);
 			sb.append(" = factory.createValueRule(");
 			String idname = rule.getIdentifierName();
 			appendStringLiteral(sb, idname);
 			sb.append(");\n");
 			if (rule.isNonEmpty()) {
-				sb.append("rule");
+				sb.append(VAR_RULE_PREFIX);
 				sb.append(idx);
 				sb.append(".setNonEmpty(true);\n");
 			}
@@ -655,8 +684,8 @@ public class RuleJavaGenerator {
 
 		@Override
 		public void visit(InOrderRule rule) {
-			sb.append(InOrderRule.class.getCanonicalName());
-			sb.append(" rule");
+			sb.append(CANONICAL_NAME_INORDERRULE);
+			sb.append(" " + VAR_RULE_PREFIX);
 			sb.append(idx);
 			sb.append(" = factory.createInOrderRule(");
 			String idname = rule.getIdentifierName();
@@ -668,8 +697,8 @@ public class RuleJavaGenerator {
 
 		@Override
 		public void visit(FirstOrderRule rule) {
-			sb.append(FirstOrderRule.class.getCanonicalName());
-			sb.append(" rule");
+			sb.append(CANONICAL_NAME_FIRSTORDERRULE);
+			sb.append(" " + VAR_RULE_PREFIX);
 			sb.append(idx);
 			sb.append(" = factory.createFirstOrderRule(");
 			String idname = rule.getIdentifierName();
@@ -681,8 +710,8 @@ public class RuleJavaGenerator {
 
 		@Override
 		public void visit(AnyOrderRule rule) {
-			sb.append(AnyOrderRule.class.getCanonicalName());
-			sb.append(" rule");
+			sb.append(CANONICAL_NAME_ANYORDERRULE);
+			sb.append(" " + VAR_RULE_PREFIX);
 			sb.append(idx);
 			sb.append(" = factory.createAnyOrderRule(");
 			String idname = rule.getIdentifierName();
@@ -694,8 +723,8 @@ public class RuleJavaGenerator {
 
 		@Override
 		public void visit(SkipRule rule) {
-			sb.append(SkipRule.class.getCanonicalName());
-			sb.append(" rule");
+			sb.append(CANONICAL_NAME_SKIPRULE);
+			sb.append(" " + VAR_RULE_PREFIX);
 			sb.append(idx);
 			sb.append(" = factory.createSkipRule(");
 			String idname = rule.getIdentifierName();
@@ -709,8 +738,8 @@ public class RuleJavaGenerator {
 
 		@Override
 		public void visit(MatchesRule rule) {
-			sb.append(MatchesRule.class.getCanonicalName());
-			sb.append(" rule");
+			sb.append(CANONICAL_NAME_MATCHESRULE);
+			sb.append(" " + VAR_RULE_PREFIX);
 			sb.append(idx);
 			sb.append(" = factory.createMatchesRule(");
 			String idname = rule.getIdentifierName();
