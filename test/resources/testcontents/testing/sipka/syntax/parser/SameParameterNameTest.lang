@@ -1,0 +1,10 @@
+language test {
+	value marker(regex pattern) {
+		skip pattern 1;
+	}
+	value marker_val(regex pattern) {
+		matches pattern 1;
+	}
+	
+	include marker_val as numbers("[0-9]+") 1;
+}

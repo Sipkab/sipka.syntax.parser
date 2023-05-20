@@ -429,16 +429,6 @@ public class Language {
 		return target;
 	}
 
-	private static void throwOnRedeclare(Stack<Pair<String, Object>> parseStack, String searchIdentifier)
-			throws ParseFailedException {
-		for (Pair<String, Object> pair : parseStack) {
-			if (pair.key.equals(searchIdentifier)) {
-				throw new ParseFailedException(
-						"Entity redeclared: " + pair.value + " with identifier: " + searchIdentifier);
-			}
-		}
-	}
-
 	private static Object getObjectWithIdentifier(ArrayDeque<Pair<String, Object>> parseStack,
 			String searchIdentifier) {
 		for (Pair<String, Object> pair : parseStack) {
@@ -548,9 +538,11 @@ public class Language {
 						}
 
 						parseDeclaredParams(scoped, rule);
+						final int initialParseStackSize = parseStackAdded;
 						for (Pair<String, Class<?>> param : rule.getDeclaredParams()) {
-							parseStack
-									.add(new Pair<>(param.key, new RuleInvocationVarReferenceParam<>(rule, param.key)));
+							Pair<String, Object> parampair = new Pair<>(param.key,
+									new RuleInvocationVarReferenceParam<>(rule, param.key));
+							parseStack.push(parampair);
 							++parseStackAdded;
 						}
 
@@ -562,6 +554,12 @@ public class Language {
 						}
 
 						parseRulesImpl(langmap, rule, scoped.firstScope("body"), parseStack, undefinedrules, factory);
+
+						//remove the previously added parameters
+						while (parseStackAdded > initialParseStackSize) {
+							parseStack.pop();
+							parseStackAdded--;
+						}
 						break;
 					}
 					case "consume_node": {
