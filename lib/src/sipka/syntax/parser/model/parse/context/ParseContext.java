@@ -56,7 +56,7 @@ public class ParseContext {
 		for (Pair<String, Object> local : locals) {
 			Object prev = initlocals.put(local.key, local.value);
 			if (prev != null) {
-				throw new IllegalArgumentException("Dupliate variables in scope with name: " + local.key);
+				throw new IllegalArgumentException("Duplicate variables in scope with name: " + local.key);
 			}
 		}
 		return initlocals;
