@@ -15,7 +15,10 @@ compile(
 ) {
 	$libjavac = saker.java.compile(
 		SourceDirectories: lib/src,
-		Identifier: lib
+		Identifier: lib,
+		SourceVersion: 8,
+		TargetVersion: 8,
+		Parameters: [--release, 8,]
 	)
 	$mainjavac = saker.java.compile(
 		SourceDirectories: main/src,
@@ -26,7 +29,10 @@ compile(
 				"saker.nest-api-v{ static(VERSION_saker.nest) }",
 			])
 		],
-		Identifier: main
+		Identifier: main,
+		SourceVersion: 8,
+		TargetVersion: 8,
+		Parameters: [--release, 8,]
 	)
 	
 }
@@ -125,9 +131,7 @@ upload(){
 	)
 }
 
-test(
-	in jreversion = 8,
-){
+test(){
 	$export = include(export)
 	$compile = $export[compile]
 	
@@ -178,7 +182,6 @@ test(
 		FailFast: true,
 		AbortOnFail: true,
 		Verbose: true,
-		JavaSDK: saker.java.sdk($jreversion),
 	)
 	
 	saker.java.test(
@@ -224,6 +227,5 @@ test(
 		FailFast: true,
 		AbortOnFail: true,
 		Verbose: true,
-		JavaSDK: saker.java.sdk($jreversion),
 	)
 }
