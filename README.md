@@ -1,6 +1,6 @@
 # sipka.syntax.parser
 
-![Build status](https://img.shields.io/azure-devops/build/sipkab/d16a9668-c9e5-4e3e-b23c-7fed5de6c898/1/master) [![Latest version](https://mirror.nest.saker.build/badges/sipka.syntax.parser/version.svg)](https://nest.saker.build/package/sipka.syntax.parser "sipka.syntax.parser | saker.nest")
+[![Build status](https://img.shields.io/azure-devops/build/sipkab/d16a9668-c9e5-4e3e-b23c-7fed5de6c898/1/master)](https://dev.azure.com/sipkab/sipka.syntax.parser/_build) [![Latest version](https://mirror.nest.saker.build/badges/sipka.syntax.parser/version.svg)](https://nest.saker.build/package/sipka.syntax.parser "sipka.syntax.parser | saker.nest")
 
 A parser library written in Java. The rules can be specified in a DSL for the library. The library parses the input and directly produces a statement tree. The library supports incrementally repairing the statement tree after it has been parsed. This makes it useful when used inside an IDE.
 
