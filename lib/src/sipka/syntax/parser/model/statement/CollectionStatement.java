@@ -30,7 +30,7 @@ import sipka.syntax.parser.model.statement.repair.ParsingInformation;
 import sipka.syntax.parser.util.ArrayRangeCharSequence;
 import sipka.syntax.parser.util.Pair;
 
-public class CollectionStatement extends Statement implements Iterable<Statement> {
+public final class CollectionStatement extends Statement implements Iterable<Statement> {
 	private static final long serialVersionUID = 7340231830076247982L;
 
 	public static final class Builder {
@@ -102,6 +102,22 @@ public class CollectionStatement extends Statement implements Iterable<Statement
 			}
 		}
 		return result;
+	}
+
+	@Override
+	public Statement firstScope(String scoper) {
+		for (Statement stm : children) {
+			String stmname = stm.getName();
+			if (stmname.isEmpty()) {
+				Statement fs = stm.firstScope(scoper);
+				if (fs != null) {
+					return fs;
+				}
+			} else if (scoper.equals(stmname)) {
+				return stm;
+			}
+		}
+		return null;
 	}
 
 	@Override
@@ -195,7 +211,7 @@ public class CollectionStatement extends Statement implements Iterable<Statement
 
 	@Override
 	public String toString() {
-		return "CollectionStatement [children=" + children.size() + "]";
+		return getClass().getSimpleName() + "[children=" + children.size() + "]";
 	}
 
 	@Override

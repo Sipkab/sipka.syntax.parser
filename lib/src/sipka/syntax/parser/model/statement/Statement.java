@@ -74,7 +74,7 @@ public abstract class Statement implements Serializable, Cloneable {
 	}
 
 	public boolean isScopesEmpty(String scoper) {
-		return scopeTo(scoper).isEmpty();
+		return firstScope(scoper) == null;
 	}
 
 	public Statement firstScope(String scoper) {

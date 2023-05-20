@@ -23,7 +23,7 @@ import sipka.syntax.parser.model.parse.document.DocumentRegion;
 import sipka.syntax.parser.util.ArrayRangeCharSequence;
 import sipka.syntax.parser.util.Pair;
 
-public class ConsumedStatement extends Statement {
+public final class ConsumedStatement extends Statement {
 	private static final long serialVersionUID = -5601536902887219903L;
 	private final ArrayRangeCharSequence value;
 
@@ -33,13 +33,18 @@ public class ConsumedStatement extends Statement {
 	}
 
 	@Override
-	public List<Statement> getDirectChildren() {
-		return Collections.emptyList();
+	public Statement firstScope(String scoper) {
+		return null;
 	}
 
 	@Override
-	public String toString() {
-		return "ConsumedStatement [value=" + value + "]";
+	public String firstValue(String scoper) {
+		return null;
+	}
+
+	@Override
+	public List<Statement> getDirectChildren() {
+		return Collections.emptyList();
 	}
 
 	@Override
@@ -80,6 +85,11 @@ public class ConsumedStatement extends Statement {
 	@Override
 	public ConsumedStatement clone() {
 		return (ConsumedStatement) super.clone();
+	}
+
+	@Override
+	public String toString() {
+		return getClass().getSimpleName() + "[value=" + value + "]";
 	}
 
 	@Override

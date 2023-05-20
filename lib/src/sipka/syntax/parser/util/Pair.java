@@ -30,7 +30,7 @@ public final class Pair<KeyType, ValueType> implements Serializable {
 
 	@Override
 	public String toString() {
-		return "Pair [" + key + ": " + value + "]";
+		return getClass().getSimpleName() + "[" + key + ": " + value + "]";
 	}
 
 	@Override

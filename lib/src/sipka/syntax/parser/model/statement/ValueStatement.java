@@ -23,7 +23,7 @@ import sipka.syntax.parser.model.parse.document.DocumentRegion;
 import sipka.syntax.parser.util.ArrayRangeCharSequence;
 import sipka.syntax.parser.util.Pair;
 
-public class ValueStatement extends Statement {
+public final class ValueStatement extends Statement {
 	private static final long serialVersionUID = -1399545866829166300L;
 
 	protected String name;
@@ -53,13 +53,18 @@ public class ValueStatement extends Statement {
 	}
 
 	@Override
-	public List<Statement> getDirectChildren() {
-		return Collections.singletonList(subStatement);
+	public Statement firstScope(String scoper) {
+		return subStatement.firstScope(scoper);
 	}
 
 	@Override
-	public String toString() {
-		return "ValueStatement [getName()=" + getName() + ", value=" + value + "]";
+	public String firstValue(String scoper) {
+		return subStatement.firstValue(scoper);
+	}
+
+	@Override
+	public List<Statement> getDirectChildren() {
+		return Collections.singletonList(subStatement);
 	}
 
 	@Override
@@ -102,6 +107,11 @@ public class ValueStatement extends Statement {
 		ValueStatement result = (ValueStatement) super.clone();
 		result.subStatement = this.subStatement.clone();
 		return result;
+	}
+
+	@Override
+	public String toString() {
+		return getClass().getSimpleName() + "[getName()=" + getName() + ", value=" + value + "]";
 	}
 
 	@Override
